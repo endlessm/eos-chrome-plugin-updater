@@ -1,0 +1,6 @@
+eos-pepflashplugin-updater (1.0.0-1) eos; urgency=low
+
+  * New upstream release 1.0.0
+
+ -- Juan A. Suarez Romero <jasuarez@igalia.com>  Wed, 04 Feb 2015 11:16:31 +0100
+
