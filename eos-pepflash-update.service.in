@@ -1,0 +1,6 @@
+[Unit]
+Description=Update or install Pepper Flash plugin
+
+[Service]
+Type=simple
+ExecStart=@pkglibexecdir@/eos-pepflash-update
