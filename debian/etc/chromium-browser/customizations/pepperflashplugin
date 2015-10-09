@@ -1,4 +1,4 @@
-flashso="/var/lib/eos-pepflashplugin-updater/libpepflashplayer.so"
+flashso="/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/libpepflashplayer.so"
 
 if [ -f ${flashso} ]
 then
