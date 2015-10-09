@@ -39,9 +39,9 @@ Provides: eos-pepflashplugin-updater
 Replaces: eos-pepflashplugin-updater
 Conflicts: eos-pepflashplugin-updater
 Description: Google Chrome plugin updater/installer
- Downloads and Installs or Upgrades the Pepper Flash Player plugin.
+ Downloads and Installs or Upgrades the Pepper Flash and Widevine DRM plugins.
  .
  This package will download Chrome from Google, and unpack it to make the
- included Pepper Flash Player available for use with Chromium.  The end user
- license agreement is available at Google.
-
+ included Pepper Flash Player and Widevine Encrypted Media Extensions DRM
+ available for use with Chromium.
+ The end user license agreement is available at Google.
