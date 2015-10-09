@@ -3,7 +3,7 @@
 [ "$IFACE" != "lo" ] || exit 0
 [ "$MODE" = "start" ] || exit 0
 
-/bin/systemctl --no-block start eos-pepflash-update.service
+/bin/systemctl --no-block start eos-chrome-plugin-update.service
 
 exit 0
 

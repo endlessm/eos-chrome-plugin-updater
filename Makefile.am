@@ -1,17 +1,17 @@
-dist_pkglibexec_SCRIPTS = eos-pepflash-update
+dist_pkglibexec_SCRIPTS = eos-chrome-plugin-update
 
 networkscriptdir = $(sysconfdir)/network/if-up.d
-dist_networkscript_DATA = eos-pepflash-update-nm
+dist_networkscript_DATA = eos-chrome-plugin-update-nm
 
-eos-pepflash-update.service: eos-pepflash-update.service.in
+eos-chrome-plugin-update.service: eos-chrome-plugin-update.service.in
 	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" $< > $@
-systemdsystemunit_DATA = eos-pepflash-update.service
+systemdsystemunit_DATA = eos-chrome-plugin-update.service
 
 install-data-hook:
-	chmod +x $(DESTDIR)$(sysconfdir)/network/if-up.d/eos-pepflash-update-nm
+	chmod +x $(DESTDIR)$(sysconfdir)/network/if-up.d/eos-chrome-plugin-update-nm
 
-EXTRA_DIST = eos-pepflash-update.service.in
-CLEANFILES = eos-pepflash-update.service
+EXTRA_DIST = eos-chrome-plugin-update.service.in
+CLEANFILES = eos-chrome-plugin-update.service
 
 MAINTAINERCLEANFILES = \
 	$(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL) \
