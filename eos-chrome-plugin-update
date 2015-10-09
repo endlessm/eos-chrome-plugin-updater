@@ -13,7 +13,7 @@ CHROME_FILENAME=
 FLASHPLUGIN_SOFILE=/opt/google/chrome/PepperFlash/libpepflashplayer.so
 
 TEMP_DIR=`mktemp -d`
-DEST_DIR=/var/lib/eos-pepflashplugin-updater
+DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 
 DAYS_CHECK=7
 
