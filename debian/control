@@ -1,15 +1,15 @@
-Source: eos-pepflashplugin-updater
+Source: eos-chrome-plugin-updater
 Section: contrib/web
 Priority: optional
-Maintainer: Juan A. Suarez Romero <jasuarez@igalia.com>
+Maintainer: Roddy Shuler <roddy@endlessm.com>
 Build-Depends: debhelper (>= 9),
 	dh-autoreconf,
 	dh-systemd,
 	systemd
 Standards-Version: 3.8.0
-Homepage: http://www.adobe.com/products/flashplayer.html
+Homepage: http://www.endlessm.com
 
-Package: eos-pepflashplugin-updater
+Package: eos-chrome-plugin-updater
 Architecture: i386
 Depends: ${misc:Depends},
 	${shlibs:Depends},
@@ -34,8 +34,11 @@ Depends: ${misc:Depends},
 	ca-certificates,
 	network-manager,
 	dctrl-tools
-Suggests: chromium, ttf-mscorefonts-installer, ttf-dejavu, ttf-xfree86-nonfree, hal
-Description: Pepper Flash Player plugin updater/installer
+Suggests: chromium-browser, ttf-mscorefonts-installer, ttf-dejavu, ttf-xfree86-nonfree, hal
+Provides: eos-pepflashplugin-updater
+Replaces: eos-pepflashplugin-updater
+Conflicts: eos-pepflashplugin-updater
+Description: Google Chrome plugin updater/installer
  Downloads and Installs or Upgrades the Pepper Flash Player plugin.
  .
  This package will download Chrome from Google, and unpack it to make the
