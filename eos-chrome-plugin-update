@@ -15,6 +15,10 @@ FLASHPLUGIN_SOFILE=/opt/google/chrome/PepperFlash/libpepflashplayer.so
 TEMP_DIR=`mktemp -d`
 DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 
+# Directories to clean up which may have been left behind
+# by old plugin updaters
+OLD_DIRS=/var/lib/eos-pepflashplugin-updater
+
 DAYS_CHECK=7
 
 fp_exit() {
@@ -100,11 +104,18 @@ fp_install_plugin() {
     echo -n "${CHROME_VERSION}" > ${DEST_DIR}/VERSION.txt
 }
 
+fp_remove_old_plugins() {
+    echo "Removing old plugin directories if present:"
+    echo ${OLD_DIRS}
+    rm -rf ${OLD_DIRS}
+}
+
 fp_should_check_update
 fp_find_latest_version
 fp_should_update
 fp_download_chrome
 fp_install_plugin
+fp_remove_old_plugins
 
 fp_exit "Pepper Flash Plugin installed."
 
