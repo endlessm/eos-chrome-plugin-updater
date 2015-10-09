@@ -1,0 +1,6 @@
+[Unit]
+Description=Update or install Google Chrome plugins
+
+[Service]
+Type=simple
+ExecStart=@pkglibexecdir@/eos-chrome-plugin-update

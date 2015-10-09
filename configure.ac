@@ -1,5 +1,5 @@
 AC_PREREQ([2.63])
-AC_INIT([eos-pepflashplugin-updater], [1.0.0], [cosimo@endlessm.com], [eos-pepflashplugin-updater], [http://www.endlessm.com/])
+AC_INIT([eos-chrome-plugin-updater], [1.0.0], [cosimo@endlessm.com], [eos-chrome-plugin-updater], [http://www.endlessm.com/])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -18,5 +18,5 @@ Makefile
 AC_OUTPUT
 
 echo "
-    Endless Pepper Flash plugin updater $VERSION
+    Endless Chrome plugin updater $VERSION
 "
