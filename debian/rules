@@ -1,4 +1,17 @@
 #!/usr/bin/make -f
 
+DEB_BUILD_ARCH     ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+
+EXTRA_PARAMS=
+
+# Disable integration with the Network Manager for non 32-bit Intel
+# builds, as the updater only supports that architecture for now.
+ifneq ($(DEB_BUILD_ARCH),i386)
+	EXTRA_PARAMS += --disable-nm-integration
+endif
+
 %:
 	dh $@ --with autoreconf,systemd
+
+override_dh_auto_configure:
+	dh_auto_configure $@ -- $(EXTRA_PARAMS)
