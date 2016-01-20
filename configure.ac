@@ -12,6 +12,17 @@ PKG_PROG_PKG_CONFIG
 # systemd
 AC_SUBST([systemdsystemunitdir], [$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
 
+# optionally disable integration with Network Manager (on ifup events)
+AC_MSG_CHECKING([whether to enable the integration with Network Manager])
+AC_ARG_ENABLE(nm-integration,
+              AC_HELP_STRING([--enable-nm-integration],
+                             [Enable integration with Network Manager [default=yes]]),
+              [enable_nm_integration="$enableval"],
+              [enable_nm_integration="yes"])
+
+AC_MSG_RESULT([$enable_nm_integration])
+AM_CONDITIONAL([ENABLE_NM_INTEGRATION],[test "x$enable_nm_integration" = "xyes"])
+
 AC_CONFIG_FILES([
 Makefile
 ])
