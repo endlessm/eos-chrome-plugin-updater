@@ -1,0 +1,224 @@
+#!/bin/bash -e
+# Copyright (C) 2016 Endless Mobile, Inc.
+# Licensed under the GPLv2
+#
+# WARNING: This utility stores all the temporary data under the CURRENT
+# working directory, as there's usually not enough space under /tmp.
+#
+# Also, it requires to be manually run as root to mount the ChromeOS
+# partitions and downloads a considerable amount of data from Internet
+# (the whole ChromeOS image), requiring confirmation before continuing.
+
+USERID=$(id -u)
+if [ "$USERID" != "0" ]; then
+    echo "Program requires superuser privileges"
+    exit 1
+fi
+
+DEB_ARCH=`dpkg --print-architecture`
+case ${DEB_ARCH} in
+    armhf) ;; # Only 32-bit ARM architecture is supported
+    *) echo "Unsupported architecture ${DEB_ARCH}"
+       exit 1
+       ;;
+esac
+
+RECOVERY_CONF_URL=https://dl.google.com/dl/edgedl/chromeos/recovery/recovery.conf
+CHROMEOS_TARGET_CHANNEL="stable-channel"
+
+CHROMEOS_VERSION=
+CHROMEOS_CHANNEL=
+CHROMEOS_SHA1SUM=
+CHROMEOS_ZIPFILESIZE=
+CHROMEOS_FILESIZE=
+CHROMEOS_FILENAME=
+CHROMEOS_IMAGE_URL=
+CHROMEOS_IMAGE_FILENAME=
+
+FLASHPLUGIN_SOFILE=/opt/google/chrome/pepper/libpepflashplayer.so
+WIDEVINEPLUGIN_SOFILE=/opt/google/chrome/libwidevinecdm.so
+
+TEMP_DIR=`mktemp -d --tmpdir=$(pwd)`
+MNT_DIR="${TEMP_DIR}/mnt"
+LOOP_DEVICE= # This will be set in fp_mount_chromeos_partition
+DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
+VERSION_FILE=${DEST_DIR}/VERSION.txt
+
+fp_cleanup_all() {
+    if [ -d "${MNT_DIR}" ]; then
+        umount "${MNT_DIR}"
+    fi
+
+    if [ -b "${LOOP_DEVICE}" ]; then
+        kpartx -d "${LOOP_DEVICE}"
+        losetup -d "${LOOP_DEVICE}"
+    fi
+
+    rm -fr ${TEMP_DIR}
+}
+
+fp_exit() {
+    echo $1
+    fp_cleanup_all
+    exit 0
+}
+
+fp_exit_with_error() {
+    echo $1
+    echo "The Chromium plugins are NOT installed."
+    [ -d ${DEST_DIR} ] || mkdir -p ${DEST_DIR}
+    touch ${VERSION_FILE}
+    fp_cleanup_all
+    exit 1
+}
+
+fp_exit_retry_with_error() {
+    echo $1
+    echo "The Chromium plugins are NOT installed."
+    fp_cleanup_all
+    exit 1
+}
+
+fp_find_samsung_arm_chromebook() {
+    local found=false;
+    while read line; do
+        if [ -n "$line" ]; then
+            local key=${line%=*}
+            local val=${line#*=}
+            if [ -z "$key" ] || [ -z "$val" ] || [ "$key=$val" != "$line" ]; then
+                continue
+            fi
+
+            if echo $line | grep -e "^name=Samsung Chromebook$" > /dev/null; then
+                found=true;
+                continue
+            fi
+
+            if ${found}; then
+                case $key in
+                    name) break ;; # This means that a new entry is being processed now
+                    version) CHROMEOS_VERSION=${val} ;;
+                    channel) CHROMEOS_CHANNEL=${val} ;;
+                    sha1) CHROMEOS_SHA1SUM=${val} ;;
+                    zipfilesize) CHROMEOS_ZIPFILESIZE=$((${val} / 1024)) ;;
+                    filesize) CHROMEOS_FILESIZE=$((${val} / 1024)) ;;
+                    file) CHROMEOS_FILENAME=${val} ;;
+                    url)
+                        CHROMEOS_IMAGE_URL=${val}
+                        CHROMEOS_IMAGE_FILENAME=$(basename "${CHROMEOS_IMAGE_URL}")
+                        ;;
+                esac
+            fi
+        fi
+    done < "${TEMP_DIR}/recovery.conf"
+}
+
+fp_find_latest_version() {
+    wget "${RECOVERY_CONF_URL}" -O "${TEMP_DIR}/recovery.conf" \
+        || fp_exit_retry_with_error "Failed to download list of ChromeOS recovery images"
+
+    fp_find_samsung_arm_chromebook
+
+    [ "${CHROMEOS_CHANNEL}" = "${CHROMEOS_TARGET_CHANNEL}" ] || \
+        fp_exit_with_error "Could not find image from the '${CHROMEOS_TARGET_CHANNEL}' channel"
+}
+
+fp_should_update() {
+    if [ ! -f ${VERSION_FILE} ] || [ -z "$(cat ${VERSION_FILE})" ]; then
+        CURRENT_VERSION="not installed"
+    else
+        CURRENT_VERSION=$(cat ${VERSION_FILE})
+    fi
+
+    echo "Installed Plugin Version: ${CURRENT_VERSION}"
+    echo "Available Plugin Version: ${CHROMEOS_VERSION}"
+
+    if [ "${CURRENT_VERSION}" = "${CHROMEOS_VERSION}" ] ; then
+        printf "\nPepper Flash plugin is up-to-date\n"
+        read -p "Do you want to force an update? (Y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            touch "${VERSION_FILE}"
+            fp_exit "Pepper Flash plugin is up-to-date. Nothing done."
+        fi
+    fi
+}
+
+fp_check_enough_free_space() {
+    # Count the filesize of the zip file twice for extra "buffer".
+    local minimum_space=$((${CHROMEOS_FILESIZE} + ${CHROMEOS_ZIPFILESIZE} * 2))
+    local available_space=$(df $(pwd) | awk '/[0-9]%/{print $(NF-2)}');
+
+    if [ $available_space -le $minimum_space ]; then
+        fp_exit_with_error "Aborting due to insufficient space on disk (required: $((${minimum_space} / 1024)) MB / available: $((${available_space} / 1024)) MB)"
+    fi
+}
+
+fp_prompt_user_confirmation() {
+    printf "\nWARNING: This script needs to download $((${CHROMEOS_ZIPFILESIZE} / 1024)) MB of data from the Internet!\n"
+    read -p "Are you sure you want to continue? (Y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]];  then
+        fp_exit "Process cancelled by the user"
+    fi
+}
+
+fp_download_chromeos() {
+    # Get ChromeOS
+    echo "Downloading ${CHROMEOS_IMAGE_URL}"
+    wget "${CHROMEOS_IMAGE_URL}" -O "${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}" \
+        || fp_exit_retry_with_error "Failed to download ${CHROMEOS_IMAGE_FILENAME}"
+
+    # Verify SHA1 checksum of the downloaded file
+    echo "Verifying ${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}"
+
+    echo "${CHROMEOS_SHA1SUM}  ${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}" | sha1sum -c > /dev/null 2>&1 \
+	|| fp_exit_with_error "sha1sum mismatch ${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}"
+}
+
+fp_uncompress_chromeos_image() {
+    unzip -d "${TEMP_DIR}" "${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}" \
+        || fp_exit_with_error "Error uncompressing ${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}"
+
+    rm -f "${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}"
+}
+
+fp_mount_chromeos_partition() {
+    [ -f "${TEMP_DIR}/${CHROMEOS_FILENAME}" ] \
+        || fp_exit_with_error "Could not find image file in ${TEMP_DIR}/${CHROMEOS_FILENAME}"
+
+    # Mount the raw image (with partitions) as one loopback device
+    LOOP_DEVICE=$(losetup -f --show "${TEMP_DIR}/${CHROMEOS_FILENAME}")
+    [ -n "${LOOP_DEVICE}" ] \
+        || fp_exit_with_error "Could not crete a loopback device for ${TEMP_DIR}/${CHROMEOS_FILENAME}"
+
+    kpartx -a "${LOOP_DEVICE}"
+    mkdir -p "${MNT_DIR}"
+
+    # The interesting data is in the third partition
+    mount -o ro /dev/mapper/$(basename ${LOOP_DEVICE})p3 "${MNT_DIR}" \
+        || fp_exit_with_error "Could not mount ChromeOS data partition"
+}
+
+fp_install_plugins() {
+    echo "Installing ${TEMP_DIR}/${CHROMEOS_FILENAME}"
+
+    [ -f ${MNT_DIR}/${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
+    [ -f ${MNT_DIR}/${WIDEVINEPLUGIN_SOFILE} ] || fp_exit_with_error "Widevine plugin not found"
+    mkdir -p ${DEST_DIR}
+    install -m 644 ${MNT_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
+    install -m 644 ${MNT_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+
+    echo -n "${CHROMEOS_VERSION}" > ${VERSION_FILE}
+}
+
+fp_find_latest_version
+fp_should_update
+fp_check_enough_free_space
+fp_prompt_user_confirmation
+fp_download_chromeos
+fp_uncompress_chromeos_image
+fp_mount_chromeos_partition
+fp_install_plugins
+
+fp_exit "Google Chrome plugins installed."
