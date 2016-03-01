@@ -1,9 +1,6 @@
 [Unit]
 Description=Update or install Google Chrome plugins
 
-# Only 32-bit Intel architectures are supported
-ConditionArchitecture=|x86
-
 [Service]
 Type=simple
 ExecStart=@pkglibexecdir@/eos-chrome-plugin-update

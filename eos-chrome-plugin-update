@@ -113,10 +113,10 @@ fp_remove_old_plugins() {
     rm -rf ${OLD_DIRS}
 }
 
-ARCH=$(arch)
-case ${ARCH} in
-    i?86) ;; # Only 32-bit Intel architectures are supported
-    *) fp_exit_with_error "Unsupported architecture ${ARCH}" ;;
+DEB_ARCH=`dpkg --print-architecture`
+case ${DEB_ARCH} in
+    i386) ;; # Only 32-bit Intel architectures are supported
+    *) fp_exit_with_error "Unsupported architecture ${DEB_ARCH}" ;;
 esac
 
 fp_should_check_update
