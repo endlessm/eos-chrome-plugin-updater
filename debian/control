@@ -33,7 +33,8 @@ Depends: ${misc:Depends},
 	binutils,
 	ca-certificates,
 	network-manager,
-	dctrl-tools
+	dctrl-tools,
+	kpartx
 Suggests: chromium-browser, ttf-mscorefonts-installer, ttf-dejavu, ttf-xfree86-nonfree, hal
 Provides: eos-pepflashplugin-updater
 Replaces: eos-pepflashplugin-updater
@@ -46,5 +47,8 @@ Description: Google Chrome plugin updater/installer
  DRM available for use with Chromium.
  The end user license agreement is available at Google.
  .
- On ARM, this package simply installs the hooks that allow using those plugins
- if present, but does not download or install anything automatically for now.
+ On ARM, this package installs the hooks that allow using those plugins if
+ present, but does not download or install anything automatically for now.
+ Instead, it provides a eos-chrome-plugin-update-arm script that can be
+ manually run to install the plugins from a ChromeOS image that will be
+ downloaded upon explicit confirmation by the user (as it's usually big).
