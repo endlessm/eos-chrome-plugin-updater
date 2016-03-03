@@ -1,0 +1,17 @@
+#!/bin/bash -e
+# Copyright (C) 2016 Endless Mobile, Inc.
+# Licensed under the GPLv2
+#
+# Simple launcher script to select the right updated
+# based on the current kernel architecture.
+
+ARCH=`arch`
+UPDATER=
+case ${ARCH} in
+    i?86|x86*) UPDATER="eos-chrome-plugin-update-intel" ;;
+    arm*) UPDATER="eos-chrome-plugin-update-arm" ;;
+    *) echo "Unsupported architecture ${ARCH}"
+       exit 1
+       ;;
+esac
+exec @pkglibexecdir@/${UPDATER}
