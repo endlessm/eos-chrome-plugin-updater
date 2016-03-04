@@ -32,6 +32,7 @@ Depends: ${misc:Depends},
 	libcurl3-gnutls,
 	binutils,
 	ca-certificates,
+	dpkg,
 	network-manager,
 	dctrl-tools,
 	kpartx
