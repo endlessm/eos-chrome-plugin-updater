@@ -1,4 +1,10 @@
-dist_pkglibexec_SCRIPTS = eos-chrome-plugin-update
+dist_pkglibexec_SCRIPTS = \
+	eos-chrome-plugin-update \
+	eos-chrome-plugin-update-intel \
+	eos-chrome-plugin-update-arm
+
+eos-chrome-plugin-update: eos-chrome-plugin-update.in
+	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" $< > $@
 
 networkscriptdir = $(sysconfdir)/network/if-up.d
 dist_networkscript_DATA = eos-chrome-plugin-update-nm
@@ -12,8 +18,13 @@ install-data-hook:
 	chmod +x $(DESTDIR)$(sysconfdir)/network/if-up.d/eos-chrome-plugin-update-nm
 endif
 
-EXTRA_DIST = eos-chrome-plugin-update.service.in
-CLEANFILES = eos-chrome-plugin-update.service
+EXTRA_DIST = \
+	eos-chrome-plugin-update.in \
+	eos-chrome-plugin-update.service.in
+
+CLEANFILES = \
+	eos-chrome-plugin-update \
+	eos-chrome-plugin-update.service
 
 MAINTAINERCLEANFILES = \
 	$(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL) \
