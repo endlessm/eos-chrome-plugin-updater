@@ -1,5 +1,7 @@
+pkglibexec_SCRIPTS = \
+	eos-chrome-plugin-update
+
 dist_pkglibexec_SCRIPTS = \
-	eos-chrome-plugin-update \
 	eos-chrome-plugin-update-intel \
 	eos-chrome-plugin-update-arm
 
