@@ -43,13 +43,15 @@ Conflicts: eos-pepflashplugin-updater
 Description: Google Chrome plugin updater/installer
  Downloads and Installs or Upgrades the Pepper Flash and Widevine DRM plugins.
  .
- On Intel, this package will download Chrome from Google, and unpack it to
- make the included Pepper Flash Player and Widevine Encrypted Media Extensions
- DRM available for use with Chromium.
- The end user license agreement is available at Google.
+ On amd64 (the only Intel architecture supported by the updater now that Google no
+ longer ships 32-bit binary packages of Google Chrome), this package will download
+ Chrome from Google, and unpack it to make the included Pepper Flash Player and
+ Widevine Encrypted Media Extensions DRM available for use with Chromium.
  .
- On ARM, this package installs the hooks that allow using those plugins if
+ On armhf, this package installs the hooks that allow using those plugins if
  present, but does not download or install anything automatically for now.
  Instead, it provides a eos-chrome-plugin-update-arm script that can be
  manually run to install the plugins from a ChromeOS image that will be
  downloaded upon explicit confirmation by the user (as it's usually big).
+ .
+ The end user license agreement is available at Google.
