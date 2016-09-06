@@ -108,7 +108,7 @@ fp_download_chrome() {
     echo "Verifying ${TEMP_DIR}/${CHROME_FILENAME}"
 
     echo "${CHROME_SHA1SUM}  ${TEMP_DIR}/${CHROME_FILENAME}" | sha1sum -c > /dev/null 2>&1 \
-	     || fp_exit_with_error "sha1sum mismatch ${TEMP_DIR}/${CHROME_FILENAME}"
+	|| fp_exit_with_error "sha1sum mismatch ${TEMP_DIR}/${CHROME_FILENAME}"
 }
 
 fp_install_plugins() {
