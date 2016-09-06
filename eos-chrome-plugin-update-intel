@@ -31,6 +31,8 @@ WIDEVINEPLUGIN_SOFILE=/opt/google/chrome/libwidevinecdm.so
 TEMP_DIR=`mktemp -d`
 DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 
+WGET_COMMAND="wget -c --tries=5"
+
 # Directories to clean up which may have been left behind
 # by old plugin updaters
 OLD_DIRS=/var/lib/eos-pepflashplugin-updater
@@ -64,7 +66,7 @@ fp_get_field() {
 }
 
 fp_find_latest_version() {
-    wget "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages" \
+    ${WGET_COMMAND} "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages" \
         || fp_exit_retry_with_error "Failed to download Packages from Google Chrome"
     local package=$(fp_get_field "Package")
     [ -n "${package}" ] || \
@@ -100,7 +102,7 @@ fp_should_update() {
 fp_download_chrome() {
     # Get Chrome
     echo "Downloading ${CHROME_FILENAME}"
-    wget "${CHROME_URL_FILENAME}" -O "${TEMP_DIR}/${CHROME_FILENAME}" \
+    ${WGET_COMMAND} "${CHROME_URL_FILENAME}" -O "${TEMP_DIR}/${CHROME_FILENAME}" \
         || fp_exit_retry_with_error "Failed to download ${CHROME_FILENAME}"
 
     # Verify SHA1 checksum of debian file
