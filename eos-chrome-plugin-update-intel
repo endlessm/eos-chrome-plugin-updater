@@ -31,11 +31,14 @@ WIDEVINEPLUGIN_SOFILE=/opt/google/chrome/libwidevinecdm.so
 TEMP_DIR=`mktemp -d`
 DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 
+WGET_COMMAND="wget -c --tries=5"
+
 # Directories to clean up which may have been left behind
 # by old plugin updaters
 OLD_DIRS=/var/lib/eos-pepflashplugin-updater
 
 DAYS_CHECK=7
+VERSION_FILE=${DEST_DIR}/VERSION.txt
 
 fp_exit() {
    echo $1
@@ -47,7 +50,7 @@ fp_exit_with_error() {
    echo $1
    echo "The Pepper Flash plugin is NOT installed."
    [ -d ${DEST_DIR} ] || mkdir -p ${DEST_DIR}
-   touch ${DEST_DIR}/VERSION.txt
+   touch ${VERSION_FILE}
    rm -fr ${TEMP_DIR}
    exit 1
 }
@@ -64,7 +67,7 @@ fp_get_field() {
 }
 
 fp_find_latest_version() {
-    wget "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages" \
+    ${WGET_COMMAND} "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages" \
         || fp_exit_retry_with_error "Failed to download Packages from Google Chrome"
     local package=$(fp_get_field "Package")
     [ -n "${package}" ] || \
@@ -77,13 +80,11 @@ fp_find_latest_version() {
 }
 
 fp_should_check_update() {
-    local version_file=${DEST_DIR}/VERSION.txt
-
-    if [ ! -f ${version_file} ] ; then
+    if [ ! -f ${VERSION_FILE} ] ; then
         CURRENT_VERSION="not installed"
-    elif [ `find ${version_file} -daystart -mtime +${DAYS_CHECK}` ] || \
-        [ `find ${version_file} -newermt "0 days"` ] ; then
-        CURRENT_VERSION=$(cat ${version_file})
+    elif [ `find ${VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] || \
+        [ `find ${VERSION_FILE} -newermt "0 days"` ] ; then
+        CURRENT_VERSION=$(cat ${VERSION_FILE})
     else
         fp_exit "No need to check yet"
     fi
@@ -92,7 +93,7 @@ fp_should_check_update() {
 fp_should_update() {
     if [ "${CURRENT_VERSION}" = "${CHROME_VERSION}" ] ; then
         # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
-        touch ${DEST_DIR}/VERSION.txt
+        touch ${VERSION_FILE}
         fp_exit "Pepper Flash plugin is up-to-date"
     fi
 }
@@ -100,14 +101,14 @@ fp_should_update() {
 fp_download_chrome() {
     # Get Chrome
     echo "Downloading ${CHROME_FILENAME}"
-    wget "${CHROME_URL_FILENAME}" -O "${TEMP_DIR}/${CHROME_FILENAME}" \
+    ${WGET_COMMAND} "${CHROME_URL_FILENAME}" -O "${TEMP_DIR}/${CHROME_FILENAME}" \
         || fp_exit_retry_with_error "Failed to download ${CHROME_FILENAME}"
 
     # Verify SHA1 checksum of debian file
     echo "Verifying ${TEMP_DIR}/${CHROME_FILENAME}"
 
     echo "${CHROME_SHA1SUM}  ${TEMP_DIR}/${CHROME_FILENAME}" | sha1sum -c > /dev/null 2>&1 \
-	     || fp_exit_with_error "sha1sum mismatch ${TEMP_DIR}/${CHROME_FILENAME}"
+	|| fp_exit_with_error "sha1sum mismatch ${TEMP_DIR}/${CHROME_FILENAME}"
 }
 
 fp_install_plugins() {
@@ -119,7 +120,7 @@ fp_install_plugins() {
     install -m 644 ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ${DEST_DIR}
     install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
 
-    echo -n "${CHROME_VERSION}" > ${DEST_DIR}/VERSION.txt
+    echo -n "${CHROME_VERSION}" > ${VERSION_FILE}
 }
 
 fp_remove_old_plugins() {

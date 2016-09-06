@@ -44,6 +44,8 @@ LOOP_DEVICE= # This will be set in fp_mount_chromeos_partition
 DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 VERSION_FILE=${DEST_DIR}/VERSION.txt
 
+WGET_COMMAND="wget -c --tries=5"
+
 fp_cleanup_all() {
     if [ -d "${MNT_DIR}" ]; then
         umount "${MNT_DIR}"
@@ -114,7 +116,7 @@ fp_find_samsung_arm_chromebook() {
 }
 
 fp_find_latest_version() {
-    wget "${RECOVERY_CONF_URL}" -O "${TEMP_DIR}/recovery.conf" \
+    ${WGET_COMMAND} "${RECOVERY_CONF_URL}" -O "${TEMP_DIR}/recovery.conf" \
         || fp_exit_retry_with_error "Failed to download list of ChromeOS recovery images"
 
     fp_find_samsung_arm_chromebook
@@ -166,7 +168,7 @@ fp_prompt_user_confirmation() {
 fp_download_chromeos() {
     # Get ChromeOS
     echo "Downloading ${CHROMEOS_IMAGE_URL}"
-    wget "${CHROMEOS_IMAGE_URL}" -O "${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}" \
+    ${WGET_COMMAND} "${CHROMEOS_IMAGE_URL}" -O "${TEMP_DIR}/${CHROMEOS_IMAGE_FILENAME}" \
         || fp_exit_retry_with_error "Failed to download ${CHROMEOS_IMAGE_FILENAME}"
 
     # Verify SHA1 checksum of the downloaded file
