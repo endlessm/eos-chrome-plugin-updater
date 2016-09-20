@@ -194,7 +194,7 @@ fp_mount_chromeos_partition() {
     [ -n "${LOOP_DEVICE}" ] \
         || fp_exit_with_error "Could not crete a loopback device for ${TEMP_DIR}/${CHROMEOS_FILENAME}"
 
-    kpartx -a "${LOOP_DEVICE}"
+    kpartx -as "${LOOP_DEVICE}"
     mkdir -p "${MNT_DIR}"
 
     # The interesting data is in the third partition
