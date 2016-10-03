@@ -125,11 +125,16 @@ fp_download_plugins() {
 
 fp_install_plugins() {
     echo "Installing plugins into ${DEST_DIR}..."
-    [ -f ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
-    [ -f ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ] || fp_exit_with_error "Widevine plugin not found"
     mkdir -p ${DEST_DIR}
+    [ -f ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
     install -m 644 ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
-    install -m 644 ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+
+    # The Widevine plugin is optional (e.g. not available for China)
+    if [ -f ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ]; then
+        install -m 644 ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+    else
+        echo "Widevine plugin not found. Skipping..."
+    fi
 
     echo -n "${PLUGINS_VERSION}" > ${INSTALLED_VERSION_FILE}
 }
