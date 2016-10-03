@@ -5,13 +5,35 @@
 # Simple launcher script to select the right updated
 # based on the current kernel architecture.
 
-ARCH=`arch`
-UPDATER=
-case ${ARCH} in
-    i?86|x86*) UPDATER="eos-chrome-plugin-update-deb" ;;
-    arm*) UPDATER="eos-chrome-plugin-update-cros" ;;
-    *) echo "Unsupported architecture ${ARCH}"
-       exit 1
-       ;;
-esac
-exec @pkglibexecdir@/${UPDATER}
+UPDATER_CONF_FILE="@sysconfdir@/default/eos-chrome-plugin-update"
+
+# To be defined below
+DOWNLOAD_URL=
+UPDATER_COMMAND=
+
+# Check whether there's a custom URL defined first
+if [ -f "${UPDATER_CONF_FILE}" ]; then
+    while IFS='=' read key value; do
+        case "$key" in
+            "HTTP_URL") DOWNLOAD_URL="$value" ;;
+            *) ;;
+        esac
+    done < ${UPDATER_CONF_FILE}
+fi
+
+if [ -n "${DOWNLOAD_URL}" ]; then
+    # Need to include the URL along with the command
+    UPDATER_COMMAND="eos-chrome-plugin-update-http ${DOWNLOAD_URL}"
+else
+    # No HTTP_URL defined, fallback to the usual methods
+    ARCH=`arch`
+    case ${ARCH} in
+        i?86|x86_64) UPDATER_COMMAND="eos-chrome-plugin-update-deb" ;;
+        arm*) UPDATER_COMMAND="eos-chrome-plugin-update-cros" ;;
+        *) echo "Unsupported architecture ${ARCH}"
+           exit 1
+           ;;
+    esac
+fi
+
+exec @pkglibexecdir@/${UPDATER_COMMAND}

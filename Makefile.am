@@ -2,11 +2,13 @@ pkglibexec_SCRIPTS = \
 	eos-chrome-plugin-update
 
 dist_pkglibexec_SCRIPTS = \
+	eos-chrome-plugin-update-http \
 	eos-chrome-plugin-update-deb \
 	eos-chrome-plugin-update-cros
 
 eos-chrome-plugin-update: eos-chrome-plugin-update.in
-	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" $< > $@
+	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" \
+	     -e "s|\@sysconfdir\@|$(sysconfdir)|" $< > $@
 
 networkscriptdir = $(sysconfdir)/NetworkManager/dispatcher.d
 dist_networkscript_DATA = 50-eos-chrome-plugin-update-nm

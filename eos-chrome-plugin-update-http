@@ -1,0 +1,143 @@
+#!/bin/bash -e
+# Copyright (C) 2016 Endless Mobile, Inc.
+
+USERID=$(id -u)
+if [ "$USERID" != "0" ]; then
+    echo "Program requires superuser privileges"
+    exit 1
+fi
+
+if [ $# -lt 1 ]; then
+    echo "Not enough parameters: Missing base URL"
+    exit 1
+fi
+BASE_URL="$1"
+
+DEB_ARCH=`dpkg --print-architecture`
+case ${DEB_ARCH} in
+    i386|amd64|armhf) ;; # Only Intel/ARM is supported
+    *) echo "Unsupported architecture ${DEB_ARCH}"
+       exit 1
+       ;;
+esac
+VERSION_FILE=${DEB_ARCH}-version.txt
+CHECKSUMS_FILE=${DEB_ARCH}-md5sums.txt
+TARBALL_FILE=${DEB_ARCH}-plugins.tar.xz
+
+PLUGINS_VERSION_URL=${BASE_URL}/${VERSION_FILE}
+PLUGINS_CHECKSUMS_URL=${BASE_URL}/${CHECKSUMS_FILE}
+PLUGINS_TARBALL_URL=${BASE_URL}/${TARBALL_FILE}
+PLUGINS_VERSION= # To be set in fp_find_latest_version
+
+FLASHPLUGIN_SOFILE=libpepflashplayer.so
+WIDEVINEPLUGIN_SOFILE=libwidevinecdm.so
+
+TEMP_DIR=`mktemp -d`
+DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
+INSTALLED_VERSION_FILE=${DEST_DIR}/VERSION.txt
+
+WGET_COMMAND="wget -c --tries=5"
+
+DAYS_CHECK=7
+
+fp_cleanup() {
+    rm -fr ${TEMP_DIR}
+}
+
+fp_exit() {
+    echo $1
+    fp_cleanup
+    exit 0
+}
+
+fp_exit_with_error() {
+    echo $1
+    echo "The Google Chrome plugins are NOT installed."
+    [ -d ${DEST_DIR} ] || mkdir -p ${DEST_DIR}
+    touch ${INSTALLED_VERSION_FILE}
+    fp_cleanup
+    exit 1
+}
+
+fp_exit_retry_with_error() {
+    echo $1
+    echo "The Google Chrome plugins are NOT installed."
+    fp_cleanup
+    exit 1
+}
+
+fp_should_check_update() {
+    if [ ! -f ${INSTALLED_VERSION_FILE} ] ; then
+        CURRENT_VERSION="not installed"
+    elif [ `find ${INSTALLED_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] || \
+             [ `find ${INSTALLED_VERSION_FILE} -newermt "0 days"` ] ; then
+        CURRENT_VERSION=$(cat ${INSTALLED_VERSION_FILE})
+    else
+        fp_exit "No need to check yet"
+    fi
+}
+
+fp_find_latest_version() {
+    ${WGET_COMMAND} "${PLUGINS_VERSION_URL}" -O "${TEMP_DIR}/${VERSION_FILE}" \
+        || fp_exit_retry_with_error "Failed to retrieve the latest available version"
+
+    PLUGINS_VERSION=$(cat "${TEMP_DIR}/${VERSION_FILE}")
+}
+
+fp_should_update() {
+    if [ "${CURRENT_VERSION}" = "${PLUGINS_VERSION}" ] ; then
+        # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+        touch ${INSTALLED_VERSION_FILE}
+        fp_exit "Google Chrome plugins are up-to-date"
+    fi
+}
+
+fp_download_plugins() {
+    # Get the relevant files
+    echo "Downloading checksums file from ${PLUGINS_CHECKSUMS_URL}..."
+    ${WGET_COMMAND} "${PLUGINS_CHECKSUMS_URL}" -O "${TEMP_DIR}/${CHECKSUMS_FILE}" \
+        || fp_exit_retry_with_error "Failed to retrieve the checksums file"
+
+    echo "Downloading plugins from ${PLUGINS_TARBALL_URL}..."
+    ${WGET_COMMAND} "${PLUGINS_TARBALL_URL}" -O "${TEMP_DIR}/${TARBALL_FILE}" \
+        || fp_exit_retry_with_error "Failed to retrieve the plugins"
+
+    # The following operations are easier to do from inside the TEMP_DIR
+    pushd "${TEMP_DIR}" > /dev/null
+
+    # Uncompress the file, which comes in a XZ-compressed tarball
+    tar xJvf "${TARBALL_FILE}" -C "${TEMP_DIR}" > /dev/null 2>&1 \
+        || fp_exit_retry_with_error "Failed to extract the plugins"
+
+    # Verify checksums for the plugins
+    printf "Verifying checksums for Google Chrome plugins... "
+    local bad_results=$(md5sum -c --quiet "${CHECKSUMS_FILE}" 2> /dev/null)
+    if [ -n "${bad_results}" ]; then
+        printf "ERROR!\n${bad_results}\n\n"
+	fp_exit_with_error "MD5SUM mismatch checking integrity of the plugins"
+    else
+        printf "OK\n\n"
+    fi
+
+    # Restore current directory
+    popd > /dev/null
+}
+
+fp_install_plugins() {
+    echo "Installing plugins into ${DEST_DIR}..."
+    [ -f ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
+    [ -f ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ] || fp_exit_with_error "Widevine plugin not found"
+    mkdir -p ${DEST_DIR}
+    install -m 644 ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
+    install -m 644 ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+
+    echo -n "${PLUGINS_VERSION}" > ${INSTALLED_VERSION_FILE}
+}
+
+fp_should_check_update
+fp_find_latest_version
+fp_should_update
+fp_download_plugins
+fp_install_plugins
+
+fp_exit "Google Chrome plugins installed."
