@@ -2,8 +2,8 @@ pkglibexec_SCRIPTS = \
 	eos-chrome-plugin-update
 
 dist_pkglibexec_SCRIPTS = \
-	eos-chrome-plugin-update-intel \
-	eos-chrome-plugin-update-arm
+	eos-chrome-plugin-update-deb \
+	eos-chrome-plugin-update-cros
 
 eos-chrome-plugin-update: eos-chrome-plugin-update.in
 	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" $< > $@

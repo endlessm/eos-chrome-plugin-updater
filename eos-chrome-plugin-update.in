@@ -8,8 +8,8 @@
 ARCH=`arch`
 UPDATER=
 case ${ARCH} in
-    i?86|x86*) UPDATER="eos-chrome-plugin-update-intel" ;;
-    arm*) UPDATER="eos-chrome-plugin-update-arm" ;;
+    i?86|x86*) UPDATER="eos-chrome-plugin-update-deb" ;;
+    arm*) UPDATER="eos-chrome-plugin-update-cros" ;;
     *) echo "Unsupported architecture ${ARCH}"
        exit 1
        ;;
