@@ -28,11 +28,18 @@ else
     # No HTTP_URL defined, fallback to the usual methods
     ARCH=`arch`
     case ${ARCH} in
-        i?86|x86_64) UPDATER_COMMAND="eos-chrome-plugin-update-deb" ;;
-        arm*) UPDATER_COMMAND="eos-chrome-plugin-update-cros" ;;
-        *) echo "Unsupported architecture ${ARCH}"
-           exit 1
-           ;;
+        i?86|x86_64)
+            UPDATER_COMMAND="eos-chrome-plugin-update-deb"
+            ;;
+        arm*)
+            echo "Automatic updater disabled for ${ARCH} architecture (it would download too much data)."
+            echo "To update plugins manually, please run: @pkglibexecdir@/eos-chrome-plugin-update-cros"
+            exit 0
+            ;;
+        *)
+            echo "Unsupported architecture ${ARCH}"
+            exit 1
+            ;;
     esac
 fi
 
