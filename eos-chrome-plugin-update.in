@@ -28,7 +28,7 @@ else
     # No HTTP_URL defined, fallback to the usual methods
     ARCH=`arch`
     case ${ARCH} in
-        i?86|x86_64)
+        x86_64)
             UPDATER_COMMAND="eos-chrome-plugin-update-deb"
             ;;
         arm*)

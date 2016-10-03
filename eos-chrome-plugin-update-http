@@ -15,7 +15,7 @@ BASE_URL="$1"
 
 DEB_ARCH=`dpkg --print-architecture`
 case ${DEB_ARCH} in
-    i386|amd64|armhf) ;; # Only Intel/ARM is supported
+    amd64|armhf) ;; # Only these architectures are supported
     *) echo "Unsupported architecture ${DEB_ARCH}"
        exit 1
        ;;
