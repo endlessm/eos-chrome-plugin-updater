@@ -1,17 +1,4 @@
 #!/usr/bin/make -f
 
-DEB_BUILD_ARCH     ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH)
-
-EXTRA_PARAMS=
-
-# Disable integration with the Network Manager for non Intel 64-bit builds,
-# as the updater is only automatically triggered in those architectures.
-ifneq ($(DEB_BUILD_ARCH),amd64)
-	EXTRA_PARAMS += --disable-nm-integration
-endif
-
 %:
 	dh $@ --with autoreconf,systemd
-
-override_dh_auto_configure:
-	dh_auto_configure $@ -- $(EXTRA_PARAMS)
