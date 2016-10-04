@@ -2,11 +2,13 @@ pkglibexec_SCRIPTS = \
 	eos-chrome-plugin-update
 
 dist_pkglibexec_SCRIPTS = \
-	eos-chrome-plugin-update-intel \
-	eos-chrome-plugin-update-arm
+	eos-chrome-plugin-update-http \
+	eos-chrome-plugin-update-deb \
+	eos-chrome-plugin-update-cros
 
 eos-chrome-plugin-update: eos-chrome-plugin-update.in
-	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" $< > $@
+	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" \
+	     -e "s|\@sysconfdir\@|$(sysconfdir)|" $< > $@
 
 networkscriptdir = $(sysconfdir)/NetworkManager/dispatcher.d
 dist_networkscript_DATA = 50-eos-chrome-plugin-update-nm
@@ -15,10 +17,8 @@ eos-chrome-plugin-update.service: eos-chrome-plugin-update.service.in
 	@sed -e "s|\@pkglibexecdir\@|$(pkglibexecdir)|" $< > $@
 systemdsystemunit_DATA = eos-chrome-plugin-update.service
 
-if ENABLE_NM_INTEGRATION
 install-data-hook:
 	chmod +x $(DESTDIR)$(sysconfdir)/NetworkManager/dispatcher.d/50-eos-chrome-plugin-update-nm
-endif
 
 EXTRA_DIST = \
 	eos-chrome-plugin-update.in \
