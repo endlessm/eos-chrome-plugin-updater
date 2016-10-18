@@ -16,25 +16,21 @@ case ${DEB_ARCH} in
        ;;
 esac
 
+TEMP_DIR=`mktemp -d`
+DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
+WGET_COMMAND="wget -c --tries=5"
+DAYS_CHECK=7
+
+# Data needed for the Widevine plugin, from Google Chrome
 CHROME_URL=http://dl.google.com/linux/chrome/deb
 CHROME_PACKAGES=${CHROME_URL}/dists/stable/main/binary-${DEB_ARCH}/Packages
-
 CHROME_FLAVOUR_VERSION=google-chrome-stable
 CHROME_VERSION=
 CHROME_SHA1SUM=
 CHROME_URL_FILENAME=
 CHROME_FILENAME=
-
-FLASHPLUGIN_SOFILE=/opt/google/chrome/PepperFlash/libpepflashplayer.so
-WIDEVINEPLUGIN_SOFILE=/opt/google/chrome/libwidevinecdm.so
-
-TEMP_DIR=`mktemp -d`
-DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
-
-WGET_COMMAND="wget -c --tries=5"
-
-DAYS_CHECK=7
-VERSION_FILE=${DEST_DIR}/VERSION.txt
+WIDEVINE_SO_FILE=/opt/google/chrome/libwidevinecdm.so
+WIDEVINE_VERSION_FILE=${DEST_DIR}/Widevine_VERSION.txt
 
 fp_exit() {
    echo $1
@@ -46,7 +42,7 @@ fp_exit_with_error() {
    echo $1
    echo "The Chromium plugins are NOT installed."
    [ -d ${DEST_DIR} ] || mkdir -p ${DEST_DIR}
-   touch ${VERSION_FILE}
+   touch ${WIDEVINE_VERSION_FILE}
    rm -fr ${TEMP_DIR}
    exit 1
 }
@@ -76,11 +72,11 @@ fp_find_latest_version() {
 }
 
 fp_should_check_update() {
-    if [ ! -f ${VERSION_FILE} ] ; then
+    if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
         CURRENT_VERSION="not installed"
-    elif [ `find ${VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] || \
-        [ `find ${VERSION_FILE} -newermt "0 days"` ] ; then
-        CURRENT_VERSION=$(cat ${VERSION_FILE})
+    elif [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] || \
+        [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
+        CURRENT_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
     else
         fp_exit "No need to check yet"
     fi
@@ -89,8 +85,8 @@ fp_should_check_update() {
 fp_should_update() {
     if [ "${CURRENT_VERSION}" = "${CHROME_VERSION}" ] ; then
         # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
-        touch ${VERSION_FILE}
-        fp_exit "Pepper Flash plugin is up-to-date"
+        touch ${WIDEVINE_VERSION_FILE}
+        fp_exit "Widevine plugin is up-to-date"
     fi
 }
 
@@ -114,21 +110,15 @@ fp_install_plugins() {
     dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome || fp_exit_with_error "cannot unpack plugin"
     mkdir -p ${DEST_DIR}
 
-    if [ -f ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ]; then
-        install -m 644 ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ${DEST_DIR}
-        echo "Pepper Flash plugin installed"
-        success=true
-    fi
-
-    if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ]; then
-        install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+    if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
+        install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR}
         echo "Widevine plugin installed"
         success=true
     fi
 
     if ${success}; then
         # Only update the version file if something got updated
-        echo -n "${CHROME_VERSION}" > ${VERSION_FILE}
+        echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
     else
         fp_exit_with_error "No plugins were installed"
     fi
