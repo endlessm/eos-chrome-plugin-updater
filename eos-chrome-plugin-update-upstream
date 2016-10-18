@@ -21,6 +21,21 @@ DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 WGET_COMMAND="wget -c --tries=5"
 DAYS_CHECK=7
 
+# Data needed for the Flash plugin, from Adobe
+FLASH_FALLBACK_VERSION="23.0.0.185"
+FLASH_FALLBACK_URL="https://fpdownload.adobe.com/pub/flashplayer/pdc/${FLASH_FALLBACK_VERSION}/flash_player_ppapi_linux.$(arch).tar.gz"
+FLASH_FALLBACK_SHA256SUM="3f7a13a615d3cf19e5feb02485e12e3785a6ef07cd7ae32072cd860468fd322b"
+
+FLASH_LKGV_FILE_URL="https://s3-us-west-2.amazonaws.com/abacadaba/flashplugin-$(arch).lkgv"
+FLASH_LKGV_VERSION=
+FLASH_LKGV_URL=
+FLASH_LKGV_SHA256SUM=
+FLASH_LKGV_FILENAME=
+
+FLASH_VERSION=
+FLASH_SO_FILE=libpepflashplayer.so
+FLASH_VERSION_FILE=${DEST_DIR}/Flash_VERSION.txt
+
 # Data needed for the Widevine plugin, from Google Chrome
 CHROME_URL=http://dl.google.com/linux/chrome/deb
 CHROME_PACKAGES=${CHROME_URL}/dists/stable/main/binary-${DEB_ARCH}/Packages
@@ -49,6 +64,23 @@ fp_get_field() {
     grep-dctrl -n -s $1 ${CHROME_FLAVOUR_VERSION} ${TEMP_DIR}/Packages
 }
 
+fp_should_check_updates_flash() {
+    if [ ! -f ${FLASH_VERSION_FILE} ] ; then
+        FLASH_VERSION="not installed"
+    else
+        FLASH_VERSION=$(cat ${FLASH_VERSION_FILE})
+        if ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+           ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
+            # Has been checked recently. No need to check
+            echo "No need to check the Flash plugin yet (version: ${FLASH_VERSION})"
+            return 1
+        fi
+    fi
+
+    echo "Flash plugin is not installed or might be too old. Checking for a new version"
+    return 0
+}
+
 fp_should_check_updates_widevine() {
     # Migrate the old VERSION.txt file if present
     if [ -f ${WIDEVINE_OLD_VERSION_FILE} ]; then
@@ -71,6 +103,30 @@ fp_should_check_updates_widevine() {
     return 0
 }
 
+fp_fetch_flash_metadata() {
+    local filename=$(basename ${FLASH_LKGV_FILE_URL})
+    if ${WGET_COMMAND} "${FLASH_LKGV_FILE_URL}" -O "${TEMP_DIR}/${filename}"; then
+        while IFS='=' read key value; do
+            case "$key" in
+                "VERSION") FLASH_LKGV_VERSION="$value" ;;
+                "URL") FLASH_LKGV_URL="$value" ;;
+                "SHA256SUM") FLASH_LKGV_SHA256SUM="$value" ;;
+                *) ;;
+            esac
+        done < ${TEMP_DIR}/${filename}
+    else
+        echo "Failed to retrieve the last known good version of the flash plugin"
+        echo "Using fallbacks values (Flash plugin version: ${FLASH_FALLBACK_VERSION})"
+
+        FLASH_LKGV_VERSION="${FLASH_FALLBACK_VERSION}"
+        FLASH_LKGV_SHA256SUM="${FLASH_FALLBACK_SHA256SUM}"
+        FLASH_LKGV_URL="${FLASH_FALLBACK_URL}"
+    fi
+
+    # This will be needed then downloading and installing
+    FLASH_LKGV_FILENAME=$(basename ${FLASH_LKGV_URL})
+}
+
 fp_fetch_widevine_metadata() {
     if ! ${WGET_COMMAND} "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages"; then
         echo "Failed to download Packages from Google Chrome"
@@ -89,6 +145,23 @@ fp_fetch_widevine_metadata() {
     local filename=$(fp_get_field "Filename")
     CHROME_URL_FILENAME=${CHROME_URL}/${filename}
     CHROME_FILENAME=${CHROME_URL_FILENAME##*/}
+}
+
+fp_should_update_flash() {
+    if fp_fetch_flash_metadata; then
+       if [ "${FLASH_VERSION}" = "${FLASH_LKGV_VERSION}" ] ; then
+           # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+           echo "Flash plugin is up-to-date"
+           touch ${FLASH_VERSION_FILE}
+           return 1
+       else
+           echo "A new version of the flash plugin is available: ${FLASH_LKGV_VERSION}"
+           return 0
+       fi
+    else
+        echo "An error happened fetching metadata for the the Flash plugin"
+        return 1
+    fi
 }
 
 fp_should_update_widevine() {
@@ -125,6 +198,40 @@ fp_download_google_chrome() {
     }
 }
 
+fp_download_adobe_flash() {
+    # Get the Adobe Flash Plugin
+    echo "Downloading ${FLASH_LKGV_FILENAME}"
+    if ! ${WGET_COMMAND} "${FLASH_LKGV_URL}" -O "${TEMP_DIR}/${FLASH_LKGV_FILENAME}"; then
+        echo "Failed to download ${FLASH_LKGV_URL}"
+        return 1
+    fi
+
+    # Verify SHA256 checksum of debian file
+    echo "Verifying ${TEMP_DIR}/${FLASH_LKGV_FILENAME}"
+    echo "${FLASH_LKGV_SHA256SUM} ${TEMP_DIR}/${FLASH_LKGV_FILENAME}" | sha256sum -c > /dev/null 2>&1 || \
+    {
+        echo "sha256sum mismatch ${TEMP_DIR}/${FLASH_LKGV_FILENAME}"
+        return 1
+    }
+}
+
+fp_install_flash_plugin() {
+    echo "Installing ${TEMP_DIR}/${FLASH_LKGV_FILENAME}"
+
+    if ! tar zxv -C ${TEMP_DIR} -f ${TEMP_DIR}/${FLASH_LKGV_FILENAME} ; then
+        echo "Cannot extract files from ${FLASH_LKGV_FILENAME}"
+        return
+    fi
+
+    if [ -f ${TEMP_DIR}/${FLASH_SO_FILE} ]; then
+        install -m 644 ${TEMP_DIR}/${FLASH_SO_FILE} ${DEST_DIR}
+        echo "Flash plugin installed"
+        echo -n "${FLASH_LKGV_VERSION}" > ${FLASH_VERSION_FILE}
+    else
+        echo "The Flash plugin was NOT installed"
+    fi
+}
+
 fp_install_widevine_plugin() {
     echo "Installing ${TEMP_DIR}/${CHROME_FILENAME}"
     if ! dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome ; then
@@ -142,6 +249,15 @@ fp_install_widevine_plugin() {
 }
 
 fp_init
+
+# Flash plugin
+if fp_should_check_updates_flash ; then
+    if fp_should_update_flash && fp_download_adobe_flash; then
+        fp_install_flash_plugin
+    else
+        echo "The Flash plugin was NOT updated"
+    fi
+fi
 
 # Widevine plugin
 if fp_should_check_updates_widevine ; then
