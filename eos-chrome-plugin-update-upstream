@@ -29,6 +29,8 @@ CHROME_VERSION=
 CHROME_SHA1SUM=
 CHROME_URL_FILENAME=
 CHROME_FILENAME=
+
+WIDEVINE_VERSION=
 WIDEVINE_SO_FILE=/opt/google/chrome/libwidevinecdm.so
 WIDEVINE_VERSION_FILE=${DEST_DIR}/Widevine_VERSION.txt
 
@@ -73,17 +75,17 @@ fp_find_latest_version() {
 
 fp_should_check_update() {
     if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
-        CURRENT_VERSION="not installed"
+        WIDEVINE_VERSION="not installed"
     elif [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] || \
         [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
-        CURRENT_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
+        WIDEVINE_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
     else
         fp_exit "No need to check yet"
     fi
 }
 
 fp_should_update() {
-    if [ "${CURRENT_VERSION}" = "${CHROME_VERSION}" ] ; then
+    if [ "${WIDEVINE_VERSION}" = "${CHROME_VERSION}" ] ; then
         # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
         touch ${WIDEVINE_VERSION_FILE}
         fp_exit "Widevine plugin is up-to-date"
