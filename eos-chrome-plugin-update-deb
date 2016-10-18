@@ -48,7 +48,7 @@ fp_exit() {
 
 fp_exit_with_error() {
    echo $1
-   echo "The Pepper Flash plugin is NOT installed."
+   echo "The Chromium plugins are NOT installed."
    [ -d ${DEST_DIR} ] || mkdir -p ${DEST_DIR}
    touch ${VERSION_FILE}
    rm -fr ${TEMP_DIR}
@@ -57,7 +57,7 @@ fp_exit_with_error() {
 
 fp_exit_retry_with_error() {
    echo $1
-   echo "The Pepper Flash plugin is NOT installed."
+   echo "The Chromium plugins are NOT installed."
    rm -fr ${TEMP_DIR}
    exit 1
 }
