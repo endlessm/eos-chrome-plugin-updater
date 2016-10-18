@@ -33,10 +33,6 @@ DEST_DIR=/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater
 
 WGET_COMMAND="wget -c --tries=5"
 
-# Directories to clean up which may have been left behind
-# by old plugin updaters
-OLD_DIRS=/var/lib/eos-pepflashplugin-updater
-
 DAYS_CHECK=7
 VERSION_FILE=${DEST_DIR}/VERSION.txt
 
@@ -138,18 +134,11 @@ fp_install_plugins() {
     fi
 }
 
-fp_remove_old_plugins() {
-    echo "Removing old plugin directories if present:"
-    echo ${OLD_DIRS}
-    rm -rf ${OLD_DIRS}
-}
-
 fp_should_check_update
 fp_find_latest_version
 fp_should_update
 fp_download_chrome
 fp_install_plugins
-fp_remove_old_plugins
 
 fp_exit "Google Chrome plugins installed."
 
