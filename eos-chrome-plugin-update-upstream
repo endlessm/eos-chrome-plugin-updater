@@ -34,104 +34,118 @@ WIDEVINE_VERSION=
 WIDEVINE_SO_FILE=/opt/google/chrome/libwidevinecdm.so
 WIDEVINE_VERSION_FILE=${DEST_DIR}/Widevine_VERSION.txt
 
+fp_init() {
+    mkdir -p ${DEST_DIR}
+}
+
 fp_exit() {
    echo $1
    rm -fr ${TEMP_DIR}
    exit 0
 }
 
-fp_exit_with_error() {
-   echo $1
-   echo "The Chromium plugins are NOT installed."
-   [ -d ${DEST_DIR} ] || mkdir -p ${DEST_DIR}
-   touch ${WIDEVINE_VERSION_FILE}
-   rm -fr ${TEMP_DIR}
-   exit 1
-}
-
-fp_exit_retry_with_error() {
-   echo $1
-   echo "The Chromium plugins are NOT installed."
-   rm -fr ${TEMP_DIR}
-   exit 1
-}
-
 fp_get_field() {
     grep-dctrl -n -s $1 ${CHROME_FLAVOUR_VERSION} ${TEMP_DIR}/Packages
 }
 
-fp_find_latest_version() {
-    ${WGET_COMMAND} "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages" \
-        || fp_exit_retry_with_error "Failed to download Packages from Google Chrome"
+fp_should_check_updates_widevine() {
+    if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
+        WIDEVINE_VERSION="not installed"
+    else
+        WIDEVINE_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
+        if ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+           ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
+            # Has been checked recently. No need to check
+            echo "No need to check the Widevine plugin yet (version: ${WIDEVINE_VERSION})"
+            return 1
+        fi
+    fi
+
+    echo "Widevine plugin is not installed or might be too old. Checking for a new version"
+    return 0
+}
+
+fp_fetch_widevine_metadata() {
+    if ! ${WGET_COMMAND} "${CHROME_PACKAGES}" -O "${TEMP_DIR}/Packages"; then
+        echo "Failed to download Packages from Google Chrome"
+        return 1
+    fi
+
     local package=$(fp_get_field "Package")
-    [ -n "${package}" ] || \
-        fp_exit_with_error "Packages does not contain ${CHROME_FLAVOUR_VERSION}"
+    if [ -z "${package}" ]; then
+        echo "Packages does not contain ${CHROME_FLAVOUR_VERSION}"
+        return 1
+    fi
+
     CHROME_VERSION=$(fp_get_field "Version")
     CHROME_SHA1SUM=$(fp_get_field "SHA1")
+
     local filename=$(fp_get_field "Filename")
     CHROME_URL_FILENAME=${CHROME_URL}/${filename}
     CHROME_FILENAME=${CHROME_URL_FILENAME##*/}
 }
 
-fp_should_check_update() {
-    if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
-        WIDEVINE_VERSION="not installed"
-    elif [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] || \
-        [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
-        WIDEVINE_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
+fp_should_update_widevine() {
+    if fp_fetch_widevine_metadata; then
+       if [ "${WIDEVINE_VERSION}" = "${CHROME_VERSION}" ] ; then
+           # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+           echo "Widevine plugin is up-to-date"
+           touch ${WIDEVINE_VERSION_FILE}
+           return 1
+       else
+           echo "A new version of the widevine plugin is available: ${CHROME_VERSION}"
+           return 0
+       fi
     else
-        fp_exit "No need to check yet"
+        echo "An error happened fetching metadata for the Widevine plugin"
+        return 1
     fi
 }
 
-fp_should_update() {
-    if [ "${WIDEVINE_VERSION}" = "${CHROME_VERSION}" ] ; then
-        # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
-        touch ${WIDEVINE_VERSION_FILE}
-        fp_exit "Widevine plugin is up-to-date"
-    fi
-}
-
-fp_download_chrome() {
+fp_download_google_chrome() {
     # Get Chrome
     echo "Downloading ${CHROME_FILENAME}"
-    ${WGET_COMMAND} "${CHROME_URL_FILENAME}" -O "${TEMP_DIR}/${CHROME_FILENAME}" \
-        || fp_exit_retry_with_error "Failed to download ${CHROME_FILENAME}"
+    if ! ${WGET_COMMAND} "${CHROME_URL_FILENAME}" -O "${TEMP_DIR}/${CHROME_FILENAME}"; then
+        echo "Failed to download ${CHROME_FILENAME}"
+        return 1
+    fi
 
     # Verify SHA1 checksum of debian file
     echo "Verifying ${TEMP_DIR}/${CHROME_FILENAME}"
-
-    echo "${CHROME_SHA1SUM}  ${TEMP_DIR}/${CHROME_FILENAME}" | sha1sum -c > /dev/null 2>&1 \
-	|| fp_exit_with_error "sha1sum mismatch ${TEMP_DIR}/${CHROME_FILENAME}"
+    echo "${CHROME_SHA1SUM} ${TEMP_DIR}/${CHROME_FILENAME}" | sha1sum -c > /dev/null 2>&1 || \
+    {
+        echo "sha1sum mismatch ${TEMP_DIR}/${CHROME_FILENAME}"
+        return 1
+    }
 }
 
-fp_install_plugins() {
-    local success=false
-
+fp_install_widevine_plugin() {
     echo "Installing ${TEMP_DIR}/${CHROME_FILENAME}"
-    dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome || fp_exit_with_error "cannot unpack plugin"
-    mkdir -p ${DEST_DIR}
+    if ! dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome ; then
+        echo "Cannot unpack package file ${CHROME_FILENAME}"
+        return
+    fi
 
     if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
         install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR}
         echo "Widevine plugin installed"
-        success=true
-    fi
-
-    if ${success}; then
-        # Only update the version file if something got updated
         echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
     else
-        fp_exit_with_error "No plugins were installed"
+        echo "The Widevine plugin was NOT installed"
     fi
 }
 
-fp_should_check_update
-fp_find_latest_version
-fp_should_update
-fp_download_chrome
-fp_install_plugins
+fp_init
 
-fp_exit "Google Chrome plugins installed."
+# Widevine plugin
+if fp_should_check_updates_widevine ; then
+    if fp_should_update_widevine && fp_download_google_chrome; then
+        fp_install_widevine_plugin
+    else
+        echo "The Widevine plugin was NOT updated"
+    fi
+fi
+
+fp_exit "All done"
 
 # vim: ts=2 sw=2
