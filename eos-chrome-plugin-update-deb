@@ -112,15 +112,30 @@ fp_download_chrome() {
 }
 
 fp_install_plugins() {
+    local success=false
+
     echo "Installing ${TEMP_DIR}/${CHROME_FILENAME}"
     dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome || fp_exit_with_error "cannot unpack plugin"
-    [ -f ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
-    [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ] || fp_exit_with_error "Widevine plugin not found"
     mkdir -p ${DEST_DIR}
-    install -m 644 ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ${DEST_DIR}
-    install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
 
-    echo -n "${CHROME_VERSION}" > ${VERSION_FILE}
+    if [ -f ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ]; then
+        install -m 644 ${TEMP_DIR}/unpackedchrome${FLASHPLUGIN_SOFILE} ${DEST_DIR}
+        echo "Pepper Flash plugin installed"
+        success=true
+    fi
+
+    if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ]; then
+        install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+        echo "Widevine plugin installed"
+        success=true
+    fi
+
+    if ${success}; then
+        # Only update the version file if something got updated
+        echo -n "${CHROME_VERSION}" > ${VERSION_FILE}
+    else
+        fp_exit_with_error "No plugins were installed"
+    fi
 }
 
 fp_remove_old_plugins() {
