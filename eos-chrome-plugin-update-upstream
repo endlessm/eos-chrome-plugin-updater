@@ -33,6 +33,7 @@ CHROME_FILENAME=
 WIDEVINE_VERSION=
 WIDEVINE_SO_FILE=/opt/google/chrome/libwidevinecdm.so
 WIDEVINE_VERSION_FILE=${DEST_DIR}/Widevine_VERSION.txt
+WIDEVINE_OLD_VERSION_FILE=${DEST_DIR}/VERSION.txt
 
 fp_init() {
     mkdir -p ${DEST_DIR}
@@ -49,6 +50,11 @@ fp_get_field() {
 }
 
 fp_should_check_updates_widevine() {
+    # Migrate the old VERSION.txt file if present
+    if [ -f ${WIDEVINE_OLD_VERSION_FILE} ]; then
+        mv ${WIDEVINE_OLD_VERSION_FILE} ${WIDEVINE_VERSION_FILE}
+    fi
+
     if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
         WIDEVINE_VERSION="not installed"
     else
