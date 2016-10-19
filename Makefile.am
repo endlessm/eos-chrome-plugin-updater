@@ -3,7 +3,7 @@ pkglibexec_SCRIPTS = \
 
 dist_pkglibexec_SCRIPTS = \
 	eos-chrome-plugin-update-http \
-	eos-chrome-plugin-update-deb \
+	eos-chrome-plugin-update-upstream \
 	eos-chrome-plugin-update-cros
 
 eos-chrome-plugin-update: eos-chrome-plugin-update.in

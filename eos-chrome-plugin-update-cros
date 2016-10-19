@@ -203,15 +203,29 @@ fp_mount_chromeos_partition() {
 }
 
 fp_install_plugins() {
+    local success=false
+
     echo "Installing ${TEMP_DIR}/${CHROMEOS_FILENAME}"
-
-    [ -f ${MNT_DIR}/${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
-    [ -f ${MNT_DIR}/${WIDEVINEPLUGIN_SOFILE} ] || fp_exit_with_error "Widevine plugin not found"
     mkdir -p ${DEST_DIR}
-    install -m 644 ${MNT_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
-    install -m 644 ${MNT_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
 
-    echo -n "${CHROMEOS_VERSION}" > ${VERSION_FILE}
+    if [ -f ${MNT_DIR}/${FLASHPLUGIN_SOFILE} ]; then
+        install -m 644 ${MNT_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
+        echo "Pepper Flash plugin installed"
+        success=true
+    fi
+
+    if [ -f ${MNT_DIR}/${WIDEVINEPLUGIN_SOFILE} ]; then
+        install -m 644 ${MNT_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+        echo "Widevine plugin installed"
+        success=true
+    fi
+
+    if ${success}; then
+        # Only update the version file if something got updated
+        echo -n "${CHROMEOS_VERSION}" > ${VERSION_FILE}
+    else
+        fp_exit_with_error "No plugins were installed"
+    fi
 }
 
 fp_find_latest_version

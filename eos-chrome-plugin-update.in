@@ -29,7 +29,7 @@ else
     ARCH=`arch`
     case ${ARCH} in
         x86_64)
-            UPDATER_COMMAND="eos-chrome-plugin-update-deb"
+            UPDATER_COMMAND="eos-chrome-plugin-update-upstream"
             ;;
         arm*)
             echo "Automatic updater disabled for ${ARCH} architecture (it would download too much data)."

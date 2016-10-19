@@ -29,6 +29,7 @@ PLUGINS_CHECKSUMS_URL=${BASE_URL}/${CHECKSUMS_FILE}
 PLUGINS_TARBALL_URL=${BASE_URL}/${TARBALL_FILE}
 PLUGINS_VERSION= # To be set in fp_find_latest_version
 
+CURRENT_VERSION=
 FLASHPLUGIN_SOFILE=libpepflashplayer.so
 WIDEVINEPLUGIN_SOFILE=libwidevinecdm.so
 
@@ -124,19 +125,29 @@ fp_download_plugins() {
 }
 
 fp_install_plugins() {
+    local success=false
+
     echo "Installing plugins into ${DEST_DIR}..."
     mkdir -p ${DEST_DIR}
-    [ -f ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ] || fp_exit_with_error "Pepper Flash plugin not found"
-    install -m 644 ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
 
-    # The Widevine plugin is optional (e.g. not available for China)
-    if [ -f ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ]; then
-        install -m 644 ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
-    else
-        echo "Widevine plugin not found. Skipping..."
+    if [ -f ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ]; then
+        install -m 644 ${TEMP_DIR}/${FLASHPLUGIN_SOFILE} ${DEST_DIR}
+        echo "Pepper Flash plugin installed"
+        success=true
     fi
 
-    echo -n "${PLUGINS_VERSION}" > ${INSTALLED_VERSION_FILE}
+    if [ -f ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ]; then
+        install -m 644 ${TEMP_DIR}/${WIDEVINEPLUGIN_SOFILE} ${DEST_DIR}
+        echo "Widevine plugin installed"
+        success=true
+    fi
+
+    if ${success}; then
+        # Only update the version file if something got updated
+        echo -n "${PLUGINS_VERSION}" > ${INSTALLED_VERSION_FILE}
+    else
+        fp_exit_with_error "No plugins were installed"
+    fi
 }
 
 fp_should_check_update
