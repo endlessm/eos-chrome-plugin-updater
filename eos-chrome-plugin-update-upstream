@@ -83,16 +83,25 @@ fp_refresh_version_file() {
 
 fp_should_check_updates_flash() {
     local should_check_updates=true
-    if [ ! -f ${FLASH_VERSION_FILE} ] ; then
-        FLASH_VERSION="not installed"
-    else
-        FLASH_VERSION=$(cat ${FLASH_VERSION_FILE})
-        if [ -z "${FLASH_VERSION}" ]; then
+
+    FLASH_VERSION="not installed"
+    if [ -f ${FLASH_VERSION_FILE} ] ; then
+        local current_version="$(cat ${FLASH_VERSION_FILE})"
+        local target_plugin="${DEST_DIR}/$(basename ${FLASH_SO_FILE})"
+
+        # Make sure that the current version stored is valid AND that the actual
+        # plugin file is also a valid object file before giving up on checking.
+        if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
+            # No point on keeping the version file in this case
             rm -f ${FLASH_VERSION_FILE}
-        elif ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
-             ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
-            # Has been checked recently. No need to check
-            should_check_updates=false
+        else
+            # If reached, we know we have a valid version file
+            FLASH_VERSION=${current_version}
+            if ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+               ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
+                # It has been checked recently so nothing to do for now
+                should_check_updates=false
+            fi
         fi
     fi
 
@@ -116,16 +125,24 @@ fp_should_check_updates_widevine() {
         rm -f ${WIDEVINE_OLD_VERSION_FILE}
     fi
 
-    if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
-        WIDEVINE_VERSION="not installed"
-    else
-        WIDEVINE_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
-        if [ -z "${WIDEVINE_VERSION}" ]; then
+    WIDEVINE_VERSION="not installed"
+    if [ -f ${WIDEVINE_VERSION_FILE} ] ; then
+        local current_version="$(cat ${WIDEVINE_VERSION_FILE})"
+        local target_plugin="${DEST_DIR}/$(basename ${WIDEVINE_SO_FILE})"
+
+        # Make sure that the current version stored is valid AND that the
+        # actual plugin file is also on disk before giving up on checking.
+        if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
+            # No point on keeping the version file in this case
             rm -f ${WIDEVINE_VERSION_FILE}
-        elif ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
-             ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
-            # Has been checked recently. No need to check
-            should_check_updates=false
+        else
+            # If reached, we know we have a valid version file
+            WIDEVINE_VERSION=${current_version}
+            if ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+               ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
+                # It has been checked recently so nothing to do for now
+                should_check_updates=false
+            fi
         fi
     fi
 
