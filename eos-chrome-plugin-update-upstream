@@ -92,8 +92,9 @@ fp_should_check_updates_flash() {
         # Make sure that the current version stored is valid AND that the actual
         # plugin file is also a valid object file before giving up on checking.
         if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
-            # No point on keeping the version file in this case
-            rm -f ${FLASH_VERSION_FILE}
+            # No point on keeping these files in this case
+            echo "Invalid version of the Flash plugin found. Removing..."
+            rm -f ${FLASH_VERSION_FILE} ${target_plugin}
         else
             # If reached, we know we have a valid version file
             FLASH_VERSION=${current_version}
@@ -133,8 +134,9 @@ fp_should_check_updates_widevine() {
         # Make sure that the current version stored is valid AND that the
         # actual plugin file is also on disk before giving up on checking.
         if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
-            # No point on keeping the version file in this case
-            rm -f ${WIDEVINE_VERSION_FILE}
+            # No point on keeping these files in this case
+            echo "Invalid version of the Widevine plugin found. Removing..."
+            rm -f ${WIDEVINE_VERSION_FILE} ${target_plugin}
         else
             # If reached, we know we have a valid version file
             WIDEVINE_VERSION=${current_version}
