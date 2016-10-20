@@ -99,9 +99,12 @@ fp_should_check_updates_flash() {
 }
 
 fp_should_check_updates_widevine() {
-    # Migrate the old VERSION.txt file if present
-    if [ -f ${WIDEVINE_OLD_VERSION_FILE} ]; then
+    # Migrate the old VERSION.txt file if present AND is not empty
+    if [ -s ${WIDEVINE_OLD_VERSION_FILE} ]; then
         mv ${WIDEVINE_OLD_VERSION_FILE} ${WIDEVINE_VERSION_FILE}
+    else
+        # Make sure an empty file gets removed
+        rm -f ${WIDEVINE_OLD_VERSION_FILE}
     fi
 
     if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
