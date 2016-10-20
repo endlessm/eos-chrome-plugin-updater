@@ -190,7 +190,7 @@ fp_should_update_flash() {
            fp_refresh_version_file ${FLASH_VERSION_FILE}
            return 1
        else
-           echo "A new version of the flash plugin is available: ${FLASH_LKGV_VERSION}"
+           echo "A new version of Flash is available: ${FLASH_LKGV_VERSION} (Current: ${FLASH_VERSION})"
            return 0
        fi
     else
@@ -207,7 +207,7 @@ fp_should_update_widevine() {
            fp_refresh_version_file ${WIDEVINE_VERSION_FILE}
            return 1
        else
-           echo "A new version of the widevine plugin is available: ${CHROME_VERSION}"
+           echo "A new version of widevine is available: ${CHROME_VERSION} (Current: ${WIDEVINE_VERSION})"
            return 0
        fi
     else
