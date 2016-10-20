@@ -64,17 +64,50 @@ fp_get_field() {
     grep-dctrl -n -s $1 ${CHROME_FLAVOUR_VERSION} ${TEMP_DIR}/Packages
 }
 
+fp_refresh_version_file() {
+    local version_file="$1"
+    if [ ! -f ${version_file} ]; then
+        echo "Version file ${version_file} does not exist. Nothing to refresh"
+        return
+    fi
+
+    if [ ! -s ${version_file} ]; then
+        echo "Version file ${version_file} is invalid (empty). Removing..."
+        rm -f ${version_file}
+        return;
+    fi
+
+    echo "Refreshing version file ${version_file}..."
+    touch ${version_file}
+}
+
 fp_should_check_updates_flash() {
-    if [ ! -f ${FLASH_VERSION_FILE} ] ; then
-        FLASH_VERSION="not installed"
-    else
-        FLASH_VERSION=$(cat ${FLASH_VERSION_FILE})
-        if ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
-           ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
-            # Has been checked recently. No need to check
-            echo "No need to check the Flash plugin yet (version: ${FLASH_VERSION})"
-            return 1
+    local should_check_updates=true
+
+    FLASH_VERSION="not installed"
+    if [ -f ${FLASH_VERSION_FILE} ] ; then
+        local current_version="$(cat ${FLASH_VERSION_FILE})"
+        local target_plugin="${DEST_DIR}/$(basename ${FLASH_SO_FILE})"
+
+        # Make sure that the current version stored is valid AND that the actual
+        # plugin file is also a valid object file before giving up on checking.
+        if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
+            # No point on keeping the version file in this case
+            rm -f ${FLASH_VERSION_FILE}
+        else
+            # If reached, we know we have a valid version file
+            FLASH_VERSION=${current_version}
+            if ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+               ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
+                # It has been checked recently so nothing to do for now
+                should_check_updates=false
+            fi
         fi
+    fi
+
+    if ! ${should_check_updates}; then
+        echo "No need to check the Flash plugin yet (version: ${FLASH_VERSION})"
+        return 1;
     fi
 
     echo "Flash plugin is not installed or might be too old. Checking for a new version"
@@ -82,21 +115,40 @@ fp_should_check_updates_flash() {
 }
 
 fp_should_check_updates_widevine() {
-    # Migrate the old VERSION.txt file if present
-    if [ -f ${WIDEVINE_OLD_VERSION_FILE} ]; then
+    local should_check_updates=true
+
+    # Migrate the old VERSION.txt file if present AND is not empty
+    if [ -s ${WIDEVINE_OLD_VERSION_FILE} ]; then
         mv ${WIDEVINE_OLD_VERSION_FILE} ${WIDEVINE_VERSION_FILE}
+    else
+        # Make sure an empty file gets removed
+        rm -f ${WIDEVINE_OLD_VERSION_FILE}
     fi
 
-    if [ ! -f ${WIDEVINE_VERSION_FILE} ] ; then
-        WIDEVINE_VERSION="not installed"
-    else
-        WIDEVINE_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
-        if ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
-           ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
-            # Has been checked recently. No need to check
-            echo "No need to check the Widevine plugin yet (version: ${WIDEVINE_VERSION})"
-            return 1
+    WIDEVINE_VERSION="not installed"
+    if [ -f ${WIDEVINE_VERSION_FILE} ] ; then
+        local current_version="$(cat ${WIDEVINE_VERSION_FILE})"
+        local target_plugin="${DEST_DIR}/$(basename ${WIDEVINE_SO_FILE})"
+
+        # Make sure that the current version stored is valid AND that the
+        # actual plugin file is also on disk before giving up on checking.
+        if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
+            # No point on keeping the version file in this case
+            rm -f ${WIDEVINE_VERSION_FILE}
+        else
+            # If reached, we know we have a valid version file
+            WIDEVINE_VERSION=${current_version}
+            if ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+               ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
+                # It has been checked recently so nothing to do for now
+                should_check_updates=false
+            fi
         fi
+    fi
+
+    if ! ${should_check_updates}; then
+        echo "No need to check the Widevine plugin yet (version: ${WIDEVINE_VERSION})"
+        return 1;
     fi
 
     echo "Widevine plugin is not installed or might be too old. Checking for a new version"
@@ -150,12 +202,12 @@ fp_fetch_widevine_metadata() {
 fp_should_update_flash() {
     if fp_fetch_flash_metadata; then
        if [ "${FLASH_VERSION}" = "${FLASH_LKGV_VERSION}" ] ; then
-           # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+           # Refresh the VERSION so it is not checked again until ${DAYS_CHECK} passed
            echo "Flash plugin is up-to-date"
-           touch ${FLASH_VERSION_FILE}
+           fp_refresh_version_file ${FLASH_VERSION_FILE}
            return 1
        else
-           echo "A new version of the flash plugin is available: ${FLASH_LKGV_VERSION}"
+           echo "A new version of Flash is available: ${FLASH_LKGV_VERSION} (Current: ${FLASH_VERSION})"
            return 0
        fi
     else
@@ -167,12 +219,12 @@ fp_should_update_flash() {
 fp_should_update_widevine() {
     if fp_fetch_widevine_metadata; then
        if [ "${WIDEVINE_VERSION}" = "${CHROME_VERSION}" ] ; then
-           # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+           # Refresh the VERSION so it is not checked again until ${DAYS_CHECK} passed
            echo "Widevine plugin is up-to-date"
-           touch ${WIDEVINE_VERSION_FILE}
+           fp_refresh_version_file ${WIDEVINE_VERSION_FILE}
            return 1
        else
-           echo "A new version of the widevine plugin is available: ${CHROME_VERSION}"
+           echo "A new version of widevine is available: ${CHROME_VERSION} (Current: ${WIDEVINE_VERSION})"
            return 0
        fi
     else
@@ -217,35 +269,42 @@ fp_download_adobe_flash() {
 
 fp_install_flash_plugin() {
     echo "Installing ${TEMP_DIR}/${FLASH_LKGV_FILENAME}"
-
     if ! tar zxv -C ${TEMP_DIR} -f ${TEMP_DIR}/${FLASH_LKGV_FILENAME} ; then
         echo "Cannot extract files from ${FLASH_LKGV_FILENAME}"
+    elif ! [ -f ${TEMP_DIR}/${FLASH_SO_FILE} ]; then
+        echo "Could not find ${FLASH_SO_FILE}"
+    elif ! install -m 644 ${TEMP_DIR}/${FLASH_SO_FILE} ${DEST_DIR} ; then
+        echo "Could not copy ${FLASH_SO_FILE} into ${DEST_DIR}"
+    else
+        # Sanity check: don't ever write a VERSION file with an empty value
+        if [ -n "${FLASH_LKGV_VERSION}" ]; then
+            echo -n "${FLASH_LKGV_VERSION}" > ${FLASH_VERSION_FILE}
+        fi
+        echo "Flash plugin installed"
         return
     fi
 
-    if [ -f ${TEMP_DIR}/${FLASH_SO_FILE} ]; then
-        install -m 644 ${TEMP_DIR}/${FLASH_SO_FILE} ${DEST_DIR}
-        echo "Flash plugin installed"
-        echo -n "${FLASH_LKGV_VERSION}" > ${FLASH_VERSION_FILE}
-    else
-        echo "The Flash plugin was NOT installed"
-    fi
+    echo "Flash plugin could NOT be installed"
 }
 
 fp_install_widevine_plugin() {
     echo "Installing ${TEMP_DIR}/${CHROME_FILENAME}"
     if ! dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome ; then
         echo "Cannot unpack package file ${CHROME_FILENAME}"
+    elif ! [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
+        echo "Could not find ${WIDEVINE_SO_FILE}"
+    elif ! install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR} ; then
+        echo "Could not copy ${WIDEVINE_SO_FILE} into ${DEST_DIR}"
+    else
+        # Sanity check: don't ever write a VERSION file with an empty value
+        if [ -n "${CHROME_VERSION}" ]; then
+            echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
+        fi
+        echo "Widevine plugin installed"
         return
     fi
 
-    if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
-        install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR}
-        echo "Widevine plugin installed"
-        echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
-    else
-        echo "The Widevine plugin was NOT installed"
-    fi
+    echo "Widevine plugin could NOT be installed"
 }
 
 fp_init
