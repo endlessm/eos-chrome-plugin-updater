@@ -64,6 +64,23 @@ fp_get_field() {
     grep-dctrl -n -s $1 ${CHROME_FLAVOUR_VERSION} ${TEMP_DIR}/Packages
 }
 
+fp_refresh_version_file() {
+    local version_file="$1"
+    if [ ! -f ${version_file} ]; then
+        echo "Version file ${version_file} does not exist. Nothing to refresh"
+        return
+    fi
+
+    if [ ! -s ${version_file} ]; then
+        echo "Version file ${version_file} is invalid (empty). Removing..."
+        rm -f ${version_file}
+        return;
+    fi
+
+    echo "Refreshing version file ${version_file}..."
+    touch ${version_file}
+}
+
 fp_should_check_updates_flash() {
     if [ ! -f ${FLASH_VERSION_FILE} ] ; then
         FLASH_VERSION="not installed"
@@ -150,9 +167,9 @@ fp_fetch_widevine_metadata() {
 fp_should_update_flash() {
     if fp_fetch_flash_metadata; then
        if [ "${FLASH_VERSION}" = "${FLASH_LKGV_VERSION}" ] ; then
-           # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+           # Refresh the VERSION so it is not checked again until ${DAYS_CHECK} passed
            echo "Flash plugin is up-to-date"
-           touch ${FLASH_VERSION_FILE}
+           fp_refresh_version_file ${FLASH_VERSION_FILE}
            return 1
        else
            echo "A new version of the flash plugin is available: ${FLASH_LKGV_VERSION}"
@@ -167,9 +184,9 @@ fp_should_update_flash() {
 fp_should_update_widevine() {
     if fp_fetch_widevine_metadata; then
        if [ "${WIDEVINE_VERSION}" = "${CHROME_VERSION}" ] ; then
-           # Touch the VERSION so it is not checked again until ${DAYS_CHECK} passed
+           # Refresh the VERSION so it is not checked again until ${DAYS_CHECK} passed
            echo "Widevine plugin is up-to-date"
-           touch ${WIDEVINE_VERSION_FILE}
+           fp_refresh_version_file ${WIDEVINE_VERSION_FILE}
            return 1
        else
            echo "A new version of the widevine plugin is available: ${CHROME_VERSION}"
