@@ -225,8 +225,11 @@ fp_install_flash_plugin() {
 
     if [ -f ${TEMP_DIR}/${FLASH_SO_FILE} ]; then
         install -m 644 ${TEMP_DIR}/${FLASH_SO_FILE} ${DEST_DIR}
+        # Sanity check: don't ever write a VERSION file with an empty value
+        if [ -n "${FLASH_LKGV_VERSION}" ]; then
+            echo -n "${FLASH_LKGV_VERSION}" > ${FLASH_VERSION_FILE}
+        fi
         echo "Flash plugin installed"
-        echo -n "${FLASH_LKGV_VERSION}" > ${FLASH_VERSION_FILE}
     else
         echo "The Flash plugin was NOT installed"
     fi
@@ -241,8 +244,11 @@ fp_install_widevine_plugin() {
 
     if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
         install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR}
+        # Sanity check: don't ever write a VERSION file with an empty value
+        if [ -n "${CHROME_VERSION}" ]; then
+            echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
+        fi
         echo "Widevine plugin installed"
-        echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
     else
         echo "The Widevine plugin was NOT installed"
     fi
