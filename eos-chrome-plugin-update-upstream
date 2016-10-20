@@ -252,41 +252,42 @@ fp_download_adobe_flash() {
 
 fp_install_flash_plugin() {
     echo "Installing ${TEMP_DIR}/${FLASH_LKGV_FILENAME}"
-
     if ! tar zxv -C ${TEMP_DIR} -f ${TEMP_DIR}/${FLASH_LKGV_FILENAME} ; then
         echo "Cannot extract files from ${FLASH_LKGV_FILENAME}"
-        return
-    fi
-
-    if [ -f ${TEMP_DIR}/${FLASH_SO_FILE} ]; then
-        install -m 644 ${TEMP_DIR}/${FLASH_SO_FILE} ${DEST_DIR}
+    elif ! [ -f ${TEMP_DIR}/${FLASH_SO_FILE} ]; then
+        echo "Could not find ${FLASH_SO_FILE}"
+    elif ! install -m 644 ${TEMP_DIR}/${FLASH_SO_FILE} ${DEST_DIR} ; then
+        echo "Could not copy ${FLASH_SO_FILE} into ${DEST_DIR}"
+    else
         # Sanity check: don't ever write a VERSION file with an empty value
         if [ -n "${FLASH_LKGV_VERSION}" ]; then
             echo -n "${FLASH_LKGV_VERSION}" > ${FLASH_VERSION_FILE}
         fi
         echo "Flash plugin installed"
-    else
-        echo "The Flash plugin was NOT installed"
+        return
     fi
+
+    echo "Flash plugin could NOT be installed"
 }
 
 fp_install_widevine_plugin() {
     echo "Installing ${TEMP_DIR}/${CHROME_FILENAME}"
     if ! dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${TEMP_DIR}/unpackedchrome ; then
         echo "Cannot unpack package file ${CHROME_FILENAME}"
-        return
-    fi
-
-    if [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
-        install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR}
+    elif ! [ -f ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ]; then
+        echo "Could not find ${WIDEVINE_SO_FILE}"
+    elif ! install -m 644 ${TEMP_DIR}/unpackedchrome${WIDEVINE_SO_FILE} ${DEST_DIR} ; then
+        echo "Could not copy ${WIDEVINE_SO_FILE} into ${DEST_DIR}"
+    else
         # Sanity check: don't ever write a VERSION file with an empty value
         if [ -n "${CHROME_VERSION}" ]; then
             echo -n "${CHROME_VERSION}" > ${WIDEVINE_VERSION_FILE}
         fi
         echo "Widevine plugin installed"
-    else
-        echo "The Widevine plugin was NOT installed"
+        return
     fi
+
+    echo "Widevine plugin could NOT be installed"
 }
 
 fp_init
