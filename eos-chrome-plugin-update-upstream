@@ -82,16 +82,23 @@ fp_refresh_version_file() {
 }
 
 fp_should_check_updates_flash() {
+    local should_check_updates=true
     if [ ! -f ${FLASH_VERSION_FILE} ] ; then
         FLASH_VERSION="not installed"
     else
         FLASH_VERSION=$(cat ${FLASH_VERSION_FILE})
-        if ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
-           ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
+        if [ -z "${FLASH_VERSION}" ]; then
+            rm -f ${FLASH_VERSION_FILE}
+        elif ! [ `find ${FLASH_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+             ! [ `find ${FLASH_VERSION_FILE} -newermt "0 days"` ] ; then
             # Has been checked recently. No need to check
-            echo "No need to check the Flash plugin yet (version: ${FLASH_VERSION})"
-            return 1
+            should_check_updates=false
         fi
+    fi
+
+    if ! ${should_check_updates}; then
+        echo "No need to check the Flash plugin yet (version: ${FLASH_VERSION})"
+        return 1;
     fi
 
     echo "Flash plugin is not installed or might be too old. Checking for a new version"
@@ -99,6 +106,8 @@ fp_should_check_updates_flash() {
 }
 
 fp_should_check_updates_widevine() {
+    local should_check_updates=true
+
     # Migrate the old VERSION.txt file if present AND is not empty
     if [ -s ${WIDEVINE_OLD_VERSION_FILE} ]; then
         mv ${WIDEVINE_OLD_VERSION_FILE} ${WIDEVINE_VERSION_FILE}
@@ -111,12 +120,18 @@ fp_should_check_updates_widevine() {
         WIDEVINE_VERSION="not installed"
     else
         WIDEVINE_VERSION=$(cat ${WIDEVINE_VERSION_FILE})
-        if ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
-           ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
+        if [ -z "${WIDEVINE_VERSION}" ]; then
+            rm -f ${WIDEVINE_VERSION_FILE}
+        elif ! [ `find ${WIDEVINE_VERSION_FILE} -daystart -mtime +${DAYS_CHECK}` ] && \
+             ! [ `find ${WIDEVINE_VERSION_FILE} -newermt "0 days"` ] ; then
             # Has been checked recently. No need to check
-            echo "No need to check the Widevine plugin yet (version: ${WIDEVINE_VERSION})"
-            return 1
+            should_check_updates=false
         fi
+    fi
+
+    if ! ${should_check_updates}; then
+        echo "No need to check the Widevine plugin yet (version: ${WIDEVINE_VERSION})"
+        return 1;
     fi
 
     echo "Widevine plugin is not installed or might be too old. Checking for a new version"
