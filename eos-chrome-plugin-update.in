@@ -10,6 +10,7 @@ UPDATER_CONF_FILE="@sysconfdir@/default/eos-chrome-plugin-update"
 # To be defined below
 DOWNLOAD_URL=
 UPDATER_COMMAND=
+DISABLED_PRODUCTS="fixme"
 
 # Check whether there's a custom URL defined first
 if [ -f "${UPDATER_CONF_FILE}" ]; then
@@ -20,6 +21,21 @@ if [ -f "${UPDATER_CONF_FILE}" ]; then
         esac
     done < ${UPDATER_CONF_FILE}
 fi
+
+# Read "eos-image-version" attr from /sysroot or / to find product
+image=$(attr -q -g eos-image-version /sysroot 2>/dev/null ) || true
+if [ "${image}" = "" ]; then
+    image=$(attr -q -g eos-image-version / 2>/dev/null ) || true
+fi
+product=$(echo "${image}" | cut -d- -f1)
+
+# Skip plugin download on disabled products
+for p in ${DISABLED_PRODUCTS}; do
+    if [ "${p}" = "${product}" ]; then
+        echo "Automatic updater disabled on ${product} product."
+        exit 0
+    fi
+done
 
 if [ -n "${DOWNLOAD_URL}" ]; then
     # Need to include the URL along with the command
