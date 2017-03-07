@@ -10,6 +10,7 @@ UPDATER_CONF_FILE="@sysconfdir@/default/eos-chrome-plugin-update"
 # To be defined below
 DOWNLOAD_URL=
 UPDATER_COMMAND=
+FIREWALL_SERVICE="eos-firewall-localonly.service"
 
 # Check whether there's a custom URL defined first
 if [ -f "${UPDATER_CONF_FILE}" ]; then
@@ -19,6 +20,18 @@ if [ -f "${UPDATER_CONF_FILE}" ]; then
             *) ;;
         esac
     done < ${UPDATER_CONF_FILE}
+fi
+
+# Skip plugin download if firewall service is active or enabled.
+# This double-check is intentional: you have to not only stop the
+# firewall but explicitly disable it for this script to function.
+# We want to avoid accidentally retreiving the plugin once during
+# some unrelated local administration task, but not being able to
+# update it in future.
+if systemctl is-active -q ${FIREWALL_SERVICE} ||
+   systemctl is-enabled -q ${FIREWALL_SERVICE}; then
+    echo "Automatic updater disabled as ${FIREWALL_SERVICE} is active or enabled."
+    exit 0
 fi
 
 if [ -n "${DOWNLOAD_URL}" ]; then
