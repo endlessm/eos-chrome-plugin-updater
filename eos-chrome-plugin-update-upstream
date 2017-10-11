@@ -22,9 +22,9 @@ WGET_COMMAND="wget -c --tries=5"
 DAYS_CHECK=7
 
 # Data needed for the Flash plugin, from Adobe
-FLASH_FALLBACK_VERSION="27.0.0.130"
+FLASH_FALLBACK_VERSION="27.0.0.159"
 FLASH_FALLBACK_URL="https://fpdownload.adobe.com/pub/flashplayer/pdc/${FLASH_FALLBACK_VERSION}/flash_player_ppapi_linux.$(arch).tar.gz"
-FLASH_FALLBACK_SHA256SUM="3a9a860a42770547e0fc3c9f4c6fd6b539c122b0a9ee5bd65c9b9cd25541a752"
+FLASH_FALLBACK_SHA256SUM="5844d563f79ace7dea2c9f1196d63cc8b77c0f5fe5d5b258f2fee3aae4ef8fb4"
 
 FLASH_LKGV_FILE_URL="https://s3-us-west-2.amazonaws.com/abacadaba/flashplugin-$(arch).lkgv"
 FLASH_LKGV_VERSION=
