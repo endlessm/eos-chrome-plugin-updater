@@ -14,30 +14,12 @@ Package: eos-chrome-plugin-updater
 Architecture: amd64 armhf
 Depends: ${misc:Depends},
 	${shlibs:Depends},
-	debconf | debconf-2.0,
-	wget,
-	libatk1.0-0,
-	libcairo2,
-	libfontconfig1,
-	libfreetype6,
-	libgcc1,
-	libglib2.0-0,
-	libgtk2.0-0 (>= 2.14),
-	libnspr4,
-	libnss3,
-	libpango-1.0-0 | libpango1.0-0,
-	libstdc++6,
-	libx11-6,
-	libxext6,
-	libxt6,
-	libcurl3-gnutls,
-	binutils,
-	ca-certificates,
-	dpkg,
+	binutils [amd64],
+	kpartx [armhf],
 	network-manager,
-	dctrl-tools,
-	kpartx
-Suggests: chromium-browser, ttf-mscorefonts-installer, ttf-dejavu, ttf-xfree86-nonfree, hal
+	unzip,
+	wget
+Suggests: chromium-browser
 Provides: eos-pepflashplugin-updater
 Replaces: eos-pepflashplugin-updater
 Conflicts: eos-pepflashplugin-updater
@@ -49,9 +31,9 @@ Description: Google Chrome plugin updater/installer
  if needed, when the machine goes online. If such an URL is not defined, the updater
  behaves differently on amd64 and armhf:
  .
- On amd64, this package will download Chrome from Google, and unpack it to make the
- included Pepper Flash Player and Widevine Encrypted Media Extensions DRM available
- for use with Chromium.
+ On amd64, this package will download the Widevine Encrypted Media Extensions
+ CDM from Google, and the Pepper Flash Player from Adobe, and make them
+ available for use with Chromium.
  .
  On armhf, this package will install the hooks that allow using those plugins if
  present, but it will not download or install anything automatically. Instead, it
