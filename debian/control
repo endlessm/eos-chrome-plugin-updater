@@ -14,7 +14,7 @@ Package: eos-chrome-plugin-updater
 Architecture: amd64 armhf
 Depends: ${misc:Depends},
 	${shlibs:Depends},
-	binutils [amd64],
+	binutils,
 	kpartx [armhf],
 	network-manager,
 	unzip,
