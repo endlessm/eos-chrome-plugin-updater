@@ -163,7 +163,7 @@ fp_fetch_flash_metadata() {
             esac
         done < ${FLASH_TEMP_DIR}/${filename}
     else
-        echo "Failed to retrieve the last known good version of the flash plugin"
+        echo "Failed to retrieve the last known good version of the Flash plugin"
         return 1
     fi
 
