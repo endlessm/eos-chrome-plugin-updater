@@ -26,10 +26,6 @@ WGET_COMMAND="wget -c --tries=5"
 DAYS_CHECK=7
 
 # Data needed for the Flash plugin, from Adobe
-FLASH_FALLBACK_VERSION="32.0.0.114"
-FLASH_FALLBACK_URL="https://fpdownload.adobe.com/pub/flashplayer/pdc/${FLASH_FALLBACK_VERSION}/flash_player_ppapi_linux.$(arch).tar.gz"
-FLASH_FALLBACK_SHA256SUM="deeb079c3c625603a3dff103ffc647f13876beae7a148abaa27eee86abcd8978"
-
 FLASH_LKGV_FILE_URL="https://s3-us-west-2.amazonaws.com/abacadaba/flashplugin-$(arch).lkgv"
 FLASH_LKGV_VERSION=
 FLASH_LKGV_URL=
@@ -167,12 +163,8 @@ fp_fetch_flash_metadata() {
             esac
         done < ${FLASH_TEMP_DIR}/${filename}
     else
-        echo "Failed to retrieve the last known good version of the flash plugin"
-        echo "Using fallbacks values (Flash plugin version: ${FLASH_FALLBACK_VERSION})"
-
-        FLASH_LKGV_VERSION="${FLASH_FALLBACK_VERSION}"
-        FLASH_LKGV_SHA256SUM="${FLASH_FALLBACK_SHA256SUM}"
-        FLASH_LKGV_URL="${FLASH_FALLBACK_URL}"
+        echo "Failed to retrieve the last known good version of the Flash plugin"
+        return 1
     fi
 
     # This will be needed then downloading and installing
