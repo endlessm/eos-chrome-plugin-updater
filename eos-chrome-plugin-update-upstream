@@ -38,7 +38,7 @@ FLASH_VERSION_FILE=${DEST_DIR}/Flash_VERSION.txt
 
 # Data needed for the Widevine plugin, from Google
 WIDEVINE_BASE_URL=https://dl.google.com/widevine-cdm
-WIDEVINE_VERSION_URL=${WIDEVINE_BASE_URL}/current.txt
+WIDEVINE_VERSION_URL=${WIDEVINE_BASE_URL}/versions.txt
 WIDEVINE_VERSION_CURRENT=
 WIDEVINE_URL=
 WIDEVINE_FILENAME=
@@ -178,7 +178,7 @@ fp_fetch_widevine_metadata() {
         return 1
     fi
 
-    WIDEVINE_VERSION_CURRENT=$(cat ${WIDEVINE_TEMP_DIR}/${filename})
+    WIDEVINE_VERSION_CURRENT=$(tail -n1 ${WIDEVINE_TEMP_DIR}/${filename})
     WIDEVINE_URL=${WIDEVINE_BASE_URL}/${WIDEVINE_VERSION_CURRENT}-linux-x64.zip
     WIDEVINE_FILENAME=$(basename ${WIDEVINE_URL})
 }
