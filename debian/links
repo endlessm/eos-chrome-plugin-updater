@@ -1,1 +1,3 @@
-/var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/libwidevinecdm.so /usr/lib/chromium-browser/libwidevinecdm.so
+#!/usr/bin/dh-exec
+[linux-amd64] /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/libwidevinecdm.so /usr/lib/chromium-browser/WidevineCdm/_platform_specific/linux_x64/libwidevinecdm.so
+[linux-armhf] /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/libwidevinecdm.so /usr/lib/chromium-browser/libwidevinecdm.so

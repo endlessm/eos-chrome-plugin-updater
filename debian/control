@@ -1,9 +1,10 @@
 Source: eos-chrome-plugin-updater
 Section: contrib/web
 Priority: optional
-Maintainer: Roddy Shuler <roddy@endlessm.com>
+Maintainer: Endless Team <emdev@endlessm.com>
 Build-Depends: debhelper (>= 9),
 	dh-autoreconf,
+	dh-exec,
 	dh-systemd,
 	pkg-config,
 	systemd
