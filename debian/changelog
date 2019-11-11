@@ -1,3 +1,13 @@
+eos-chrome-plugin-updater (1.0.1-1) eos; urgency=low
+
+  * New upstream release 1.0.1
+  * Install widevinecdm link on different paths for armhf and amd64.
+    This is required to make widevine work with chromium >= 78 which searches
+    for the plugin on a platform specific path on amd64.
+    https://phabricator.endlessm.com/T27973
+
+ -- Andre Moreira Magalhaes <andre@endlessm.com>  Fri, 08 Nov 2019 11:41:37 -0300
+
 eos-chrome-plugin-updater (1.0.0-1) eos; urgency=low
 
   [ Juan A. Suarez Romero ]
