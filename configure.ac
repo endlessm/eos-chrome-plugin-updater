@@ -1,5 +1,5 @@
 AC_PREREQ([2.63])
-AC_INIT([eos-chrome-plugin-updater], [1.0.1], [emdev@endlessm.com], [eos-chrome-plugin-updater], [http://www.endlessm.com/])
+AC_INIT([eos-chrome-plugin-updater], [1.0.2], [emdev@endlessm.com], [eos-chrome-plugin-updater], [http://www.endlessm.com/])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
