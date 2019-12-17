@@ -1,3 +1,5 @@
 #!/usr/bin/dh-exec
 [linux-amd64] /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/libwidevinecdm.so /usr/lib/chromium-browser/WidevineCdm/_platform_specific/linux_x64/libwidevinecdm.so
+[linux-amd64] /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/Widevine_manifest.json /usr/lib/chromium-browser/WidevineCdm/manifest.json
 [linux-armhf] /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/libwidevinecdm.so /usr/lib/chromium-browser/libwidevinecdm.so
+[linux-armhf] /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/Widevine_manifest.json /usr/lib/chromium-browser/manifest.json

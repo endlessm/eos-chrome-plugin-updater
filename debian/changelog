@@ -1,3 +1,13 @@
+eos-chrome-plugin-updater (1.0.2-1) eos; urgency=low
+
+  * New upstream release 1.0.2
+  * Install widevinecdm manifest.
+    This is required to make widevine work with chromium >= 79 which will
+    skip loading the library if the manifest cannot be found
+    https://phabricator.endlessm.com/T28590
+
+ -- Andre Moreira Magalhaes <andre@endlessm.com>  Mon, 16 Dec 2019 20:29:26 -0300
+
 eos-chrome-plugin-updater (1.0.1-1) eos; urgency=low
 
   * New upstream release 1.0.1
