@@ -45,6 +45,9 @@ WIDEVINE_FILENAME=
 
 WIDEVINE_VERSION=
 WIDEVINE_SO_FILE=libwidevinecdm.so
+WIDEVINE_TARGET_SO_FILE=libwidevinecdm.so
+WIDEVINE_MANIFEST_FILE=manifest.json
+WIDEVINE_TARGET_MANIFEST_FILE=Widevine_manifest.json
 WIDEVINE_VERSION_FILE=${DEST_DIR}/Widevine_VERSION.txt
 WIDEVINE_OLD_VERSION_FILE=${DEST_DIR}/VERSION.txt
 
@@ -123,11 +126,14 @@ fp_should_check_updates_widevine() {
     WIDEVINE_VERSION="not installed"
     if [ -f ${WIDEVINE_VERSION_FILE} ] ; then
         local current_version="$(cat ${WIDEVINE_VERSION_FILE})"
-        local target_plugin="${DEST_DIR}/$(basename ${WIDEVINE_SO_FILE})"
+        local target_plugin="${DEST_DIR}/${WIDEVINE_TARGET_SO_FILE}"
+        local target_manifest="${DEST_DIR}/${WIDEVINE_TARGET_MANIFEST_FILE}"
 
         # Make sure that the current version stored is valid AND that the
-        # actual plugin file is also on disk before giving up on checking.
-        if [ -z "${current_version}" ] || ! nm ${target_plugin} > /dev/null 2>&1; then
+        # actual plugin file and manifest is also on disk before giving up on checking.
+        if [ -z "${current_version}" ] || \
+           [ ! -f ${target_manifest} ] || \
+           ! nm ${target_plugin} > /dev/null 2>&1; then
             # No point on keeping these files in this case
             echo "Invalid version of the Widevine plugin found. Removing..."
             rm -f ${WIDEVINE_VERSION_FILE} ${target_plugin}
@@ -270,8 +276,12 @@ fp_install_widevine_plugin() {
         echo "Cannot unpack zip file ${WIDEVINE_FILENAME}"
     elif ! [ -f ${WIDEVINE_TEMP_DIR}/${WIDEVINE_SO_FILE} ]; then
         echo "Could not find ${WIDEVINE_SO_FILE}"
-    elif ! install -m 644 ${WIDEVINE_TEMP_DIR}/${WIDEVINE_SO_FILE} ${DEST_DIR} ; then
-        echo "Could not copy ${WIDEVINE_SO_FILE} into ${DEST_DIR}"
+    elif ! [ -f ${WIDEVINE_TEMP_DIR}/${WIDEVINE_MANIFEST_FILE} ]; then
+        echo "Could not find ${WIDEVINE_MANIFEST_FILE}"
+    elif ! install -m 644 ${WIDEVINE_TEMP_DIR}/${WIDEVINE_SO_FILE} ${DEST_DIR}/${WIDEVINE_TARGET_SO_FILE} ; then
+        echo "Could not copy ${WIDEVINE_SO_FILE} into ${DEST_DIR}/${WIDEVINE_TARGET_SO_FILE}"
+    elif ! install -m 644 ${WIDEVINE_TEMP_DIR}/${WIDEVINE_MANIFEST_FILE} ${DEST_DIR}/${WIDEVINE_TARGET_MANIFEST_FILE} ; then
+        echo "Could not copy ${WIDEVINE_MANIFEST_FILE} into ${DEST_DIR}/${WIDEVINE_TARGET_MANIFEST_FILE}"
     else
         # Sanity check: don't ever write a VERSION file with an empty value
         if [ -n "${WIDEVINE_VERSION_CURRENT}" ]; then
