@@ -5,7 +5,6 @@ Maintainer: Endless Team <emdev@endlessm.com>
 Build-Depends: debhelper (>= 9),
 	dh-autoreconf,
 	dh-exec,
-	dh-systemd,
 	pkg-config,
 	systemd
 Standards-Version: 3.8.0
